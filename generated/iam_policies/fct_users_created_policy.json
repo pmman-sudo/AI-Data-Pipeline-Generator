@@ -2,37 +2,39 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AllowRedshiftRead",
+      "Sid": "AllowAirflowToExecuteHiveQuery",
       "Effect": "Allow",
       "Action": [
-        "redshift:GetClusterCredentials",
-        "redshift:DescribeClusters"
+        "hive:ExecuteQuery"
       ],
       "Resource": "*"
     },
     {
-      "Sid": "AllowRedshiftWrite",
+      "Sid": "AllowAirflowToReadFromHiveTable",
       "Effect": "Allow",
       "Action": [
-        "redshift:ExecuteQuery",
-        "redshift:CancelQuery"
+        "hive:Select"
       ],
-      "Resource": "arn:aws:redshift:*:*:cluster:*",
-      "Condition": {
-        "StringLike": {
-          "redshift:DbUser": "awsuser"
-        }
-      }
+      "Resource": "arn:aws:hive:region:account-id:table/logging_events"
     },
     {
-      "Sid": "AllowLogging",
+      "Sid": "AllowAirflowToWriteToFctUsersCreatedTable",
+      "Effect": "Allow",
+      "Action": [
+        "hive:Insert",
+        "hive:CreateTable"
+      ],
+      "Resource": "arn:aws:hive:region:account-id:table/fct_users_created"
+    },
+    {
+      "Sid": "AllowAirflowToLogEvents",
       "Effect": "Allow",
       "Action": [
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
         "logs:PutLogEvents"
       ],
-      "Resource": "arn:aws:logs:*:*:log-group:/aws/redshift/*"
+      "Resource": "arn:aws:logs:region:account-id:log-group:/aws/airflow/*"
     }
   ]
 }

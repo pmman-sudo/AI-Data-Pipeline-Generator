@@ -2,12 +2,23 @@ import json
 from typing import Dict
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.datahub.client import MetadataService
 from app.llm.provider import generate
 from app.security.validator import extract_code_blocks, save_and_validate
 
 app = FastAPI(title="AI Data Pipeline Generator")
+
+# --- ADD THIS CORS CONFIGURATION ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+# -----------------------------------
 
 # --- PYDANTIC MODELS FOR API DOCS ---
 class GenerateRequest(BaseModel):
