@@ -1,23 +1,94 @@
-from datahub.emitter.rest_emitter import DatahubRestEmitter
+from dataclasses import dataclass
+from typing import List, Dict
+from fastapi import HTTPException
+
+# Import the direct SDK client tools you used on Day 2
 from datahub.ingestion.graph.client import DataHubGraph, DatahubClientConfig
-from datahub.metadata.schema_classes import SchemaMetadataClass, OwnershipClass, GlobalTagsClass
-import json
+from datahub.metadata.schema_classes import (
+    SchemaMetadataClass, 
+    OwnershipClass, 
+    GlobalTagsClass, 
+    UpstreamLineageClass
+)
 
-graph = DataHubGraph(DatahubClientConfig(server='http://localhost:8080'))
-urn = 'urn:li:dataset:(urn:li:dataPlatform:hive,fct_users_created,PROD)'
+# Define the dataclass as outlined in the Day 3/Day 4 instructions
+@dataclass
+class TableMetadata:
+    name: str
+    columns: List[Dict[str, str]]
+    owners: List[str]
+    tags: List[str]
+    lineage: List[str]
 
-# Fetch aspects
-schema = graph.get_aspect(urn, aspect_type=SchemaMetadataClass)
-ownership = graph.get_aspect(urn, aspect_type=OwnershipClass)
-tags = graph.get_aspect(urn, aspect_type=GlobalTagsClass)
+class MetadataService:
+    def __init__(self):
+        # Initialize the graph client pointing to local GMS, bypassing the MCP server
+        self.graph = DataHubGraph(DatahubClientConfig(server='http://localhost:8080'))
+        
+        # Hardcoding the platform and environment based on Day 2's sample URN
+        self.platform = "hive"
+        self.env = "PROD"
 
-# Structure the data
-data_blob = {
-    "urn": urn,
-    "schema": [f.fieldPath for f in schema.fields] if schema else [],
-    "owners": str(ownership) if ownership else "None",
-    "tags": str(tags) if tags else "None"
-}
+    def get_table_context(self, table_name: str) -> TableMetadata:
+        """Fetches metadata from DataHub and maps it to the TableMetadata dataclass."""
+        
+        # Construct the URN string format that DataHub expects
+        urn = f"urn:li:dataset:(urn:li:dataPlatform:{self.platform},{table_name},{self.env})"
+        
+        try:
+            # Fetch the raw aspects using the graph client
+            schema = self.graph.get_aspect(urn, aspect_type=SchemaMetadataClass)
+            ownership = self.graph.get_aspect(urn, aspect_type=OwnershipClass)
+            tags_aspect = self.graph.get_aspect(urn, aspect_type=GlobalTagsClass)
+            lineage_aspect = self.graph.get_aspect(urn, aspect_type=UpstreamLineageClass)
+            
+            # Error Handling: 404 if the table URN is unknown (Schema is None)
+            if not schema:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"Table '{table_name}' not found. Please check for similar table names."
+                )
 
-# Print as JSON
-print(json.dumps(data_blob, indent=2))
+            # Map the Data: Extract columns as a list of dictionaries
+            columns = [
+                {
+                    "name": field.fieldPath, 
+                    "type": field.nativeDataType, 
+                    "description": field.description or ""
+                } 
+                for field in schema.fields
+            ]
+            
+            # Map the Data: Extract owners
+            owners = []
+            if ownership:
+                owners = [owner.owner for owner in ownership.owners]
+                
+            # Map the Data: Extract tags
+            tags = []
+            if tags_aspect:
+                tags = [tag.tag for tag in tags_aspect.tags]
+                
+            # Map the Data: Extract upstream lineage URNs
+            lineage = []
+            if lineage_aspect:
+                lineage = [upstream.dataset for upstream in lineage_aspect.upstreams]
+
+            # Return the populated dataclass
+            return TableMetadata(
+                name=table_name,
+                columns=columns,
+                owners=owners,
+                tags=tags,
+                lineage=lineage
+            )
+            
+        except HTTPException:
+            # Re-raise the 404 so it isn't caught by the broad exception below
+            raise
+        except Exception as e:
+            # Error Handling: 503 if the connection to DataHub fails
+            raise HTTPException(
+                status_code=503, 
+                detail=f"Is DataHub running? Connection failed: {str(e)}"
+            )
