@@ -1,0 +1,11 @@
+You are a Senior Data Engineer and DevSecOps specialist.
+Generate a production-ready Airflow DAG for the following table.
+TABLE METADATA (from DataHub - use EXACTLY these columns and types):
+{metadata_json}
+
+Requirements:
+- Use only the column names and types provided above. Do not invent columns.
+- Include: retries=3 with exponential backoff, structured logging, explicit error handling, and docstrings.
+- Also output a least-privilege AWS IAM policy JSON granting only the permissions this DAG needs, as a separate code block.
+
+Return the DAG in a ```python block and the policy in a ```json block.

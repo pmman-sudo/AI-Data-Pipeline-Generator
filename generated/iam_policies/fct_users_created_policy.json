@@ -1,0 +1,38 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowRedshiftRead",
+      "Effect": "Allow",
+      "Action": [
+        "redshift:GetClusterCredentials",
+        "redshift:DescribeClusters"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowRedshiftWrite",
+      "Effect": "Allow",
+      "Action": [
+        "redshift:ExecuteQuery",
+        "redshift:CancelQuery"
+      ],
+      "Resource": "arn:aws:redshift:*:*:cluster:*",
+      "Condition": {
+        "StringLike": {
+          "redshift:DbUser": "awsuser"
+        }
+      }
+    },
+    {
+      "Sid": "AllowLogging",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:log-group:/aws/redshift/*"
+    }
+  ]
+}
