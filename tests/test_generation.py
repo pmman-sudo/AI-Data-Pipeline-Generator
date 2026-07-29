@@ -4,24 +4,19 @@ from app.main import app
 
 client = TestClient(app)
 
-# Dummy responses to mimic the LLM
 MOCK_VALID_DAG = """
-```python
 print("Hello Airflow")
-
-```json
 {"Statement": [{"Effect": "Allow", "Action": "s3:GetObject", "Resource": "*"}]}
-
-```python"""
+"""
 
 def test_generate_returns_artifact(mocker):
-    # 1. Mock the LLM generation so we don't call the real API
+    # 1. Mock the LLM generation
     mocker.patch("app.main.generate", return_value=MOCK_VALID_DAG)
     
-    # 2. Mock the GitHub push so we don't actually push to Git during tests
+    # 2. Mock the GitHub push
     mocker.patch("app.main.commit_and_push", return_value="mock123")
     
-    # 3. FIX: Mock the DatahubRestEmitter class directly to prevent any connection attempts
+    # 3. FIX: Mock the DataHub class to prevent connection attempts
     mocker.patch("app.datahub.writeback.DatahubRestEmitter")
 
     # Execute the request
