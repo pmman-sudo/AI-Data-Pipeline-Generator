@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from app.main import app
 
@@ -16,8 +17,9 @@ def test_generate_returns_artifact(mocker):
     # 2. Mock the GitHub push
     mocker.patch("app.main.commit_and_push", return_value="mock123")
     
-    # 3. FIX: Patch the instance variable 'emitter' directly
-    mocker.patch("app.datahub.writeback.emitter")
+    # 3. FIX: Patch the metadata writeback function to return True immediately
+    # Since we refactored, we can just mock the function call itself!
+    mocker.patch("app.main.write_generation_metadata", return_value=True)
 
     # Execute the request
     resp = client.post('/generate', json={'task': 'Generate an Airflow DAG for the fct_users_created table'})

@@ -4,11 +4,12 @@ from datahub.emitter.mce_builder import make_dataset_urn
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
 from datahub.metadata.schema_classes import DatasetPropertiesClass
 
-def write_generation_metadata(table_name: str, artifact_path: str, prompt: str, commit_hash: str):
+def write_generation_metadata(table_name: str, artifact_path: str, prompt: str, commit_hash: str, emitter=None):
     """Writes the generation metadata back to the dataset in DataHub."""
     
-    # Connect to the local DataHub GMS
-    emitter = DatahubRestEmitter('http://localhost:8080')
+    # Connect to the local DataHub GMS only if an emitter isn't provided
+    if emitter is None:
+        emitter = DatahubRestEmitter('http://localhost:8080')
     
     # Construct the unique URN for the table (assuming the 'hive' platform and 'PROD' env from your sample data)
     dataset_urn = make_dataset_urn("hive", table_name, "PROD")
