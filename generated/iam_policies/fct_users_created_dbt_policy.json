@@ -1,40 +1,33 @@
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "DbtModelExecution",
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:ListBucket",
-        "s3:PutObject",
-        "s3:DeleteObject"
-      ],
-      "Resource": [
-        "arn:aws:s3:::your-bucket-name",
-        "arn:aws:s3:::your-bucket-name/*"
-      ]
-    },
-    {
-      "Sid": "RedshiftReadAccess",
-      "Effect": "Allow",
-      "Action": [
-        "redshift:GetClusterCredentials",
-        "redshift:DescribeClusters",
-        "redshift:DescribeTables",
-        "redshift:ExecuteQuery"
-      ],
-      "Resource": "arn:aws:redshift:*:*:cluster:your-cluster-name"
-    },
-    {
-      "Sid": "DbtLogging",
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      "Resource": "arn:aws:logs:*:*:log-group:/aws/dbt"
-    }
-  ]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "dbtExecutionPolicy",
+            "Effect": "Allow",
+            "Action": [
+                "glue:GetDatabase",
+                "glue:GetPartitions",
+                "glue:GetPartition",
+                "glue:GetTable",
+                "glue:GetTables",
+                "glue:GetTableVersions",
+                "glue:GetTableVersion"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Sid": "dbtExecutionPolicy",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:ListBucket",
+                "s3:PutObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::your-bucket-name/*"
+            ]
+        }
+    ]
 }
