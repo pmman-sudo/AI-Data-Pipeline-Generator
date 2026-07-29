@@ -9,4 +9,4 @@ jobs:
         with: {python-version: '3.11'}
       - run: pip install -r requirements.txt bandit pytest
       - run: bandit -r generated/ -ll
-      - run: pytest tests/ -v
+      - run: PYTHONPATH=. pytest tests/ -v
