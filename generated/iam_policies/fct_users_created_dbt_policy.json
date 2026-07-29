@@ -2,39 +2,39 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AllowAccessToUpstreamTable",
+      "Sid": "DbtModelExecution",
       "Effect": "Allow",
       "Action": [
         "s3:GetObject",
-        "s3:ListBucket"
+        "s3:ListBucket",
+        "s3:PutObject",
+        "s3:DeleteObject"
       ],
       "Resource": [
+        "arn:aws:s3:::your-bucket-name",
         "arn:aws:s3:::your-bucket-name/*"
       ]
     },
     {
-      "Sid": "AllowDbtToCreateAndReadModels",
+      "Sid": "RedshiftReadAccess",
       "Effect": "Allow",
       "Action": [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:DeleteObject",
-        "s3:ListBucket"
+        "redshift:GetClusterCredentials",
+        "redshift:DescribeClusters",
+        "redshift:DescribeTables",
+        "redshift:ExecuteQuery"
       ],
-      "Resource": [
-        "arn:aws:s3:::your-bucket-name/dbt-models/*"
-      ]
+      "Resource": "arn:aws:redshift:*:*:cluster:your-cluster-name"
     },
     {
-      "Sid": "AllowDbtToDescribeAndExecuteQueries",
+      "Sid": "DbtLogging",
       "Effect": "Allow",
       "Action": [
-        "athena:StartQueryExecution",
-        "athena:StopQueryExecution",
-        "athena:GetQueryExecution",
-        "athena:GetQueryResults"
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
       ],
-      "Resource": "*"
+      "Resource": "arn:aws:logs:*:*:log-group:/aws/dbt"
     }
   ]
 }
