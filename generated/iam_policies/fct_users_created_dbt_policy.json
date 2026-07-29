@@ -2,20 +2,39 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AllowDbtModelExecution",
+      "Sid": "AllowAccessToUpstreamTable",
       "Effect": "Allow",
       "Action": [
         "s3:GetObject",
-        "s3:ListBucket",
-        "s3:PutObject",
-        "dbt:ExecuteSqlQuery"
+        "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::your-bucket-name",
-        "arn:aws:s3:::your-bucket-name/*",
-        "arn:aws:lakeformation:region:account-id:database/your-database-name",
-        "arn:aws:lakeformation:region:account-id:table/your-table-name"
+        "arn:aws:s3:::your-bucket-name/*"
       ]
+    },
+    {
+      "Sid": "AllowDbtToCreateAndReadModels",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-bucket-name/dbt-models/*"
+      ]
+    },
+    {
+      "Sid": "AllowDbtToDescribeAndExecuteQueries",
+      "Effect": "Allow",
+      "Action": [
+        "athena:StartQueryExecution",
+        "athena:StopQueryExecution",
+        "athena:GetQueryExecution",
+        "athena:GetQueryResults"
+      ],
+      "Resource": "*"
     }
   ]
 }
