@@ -16,12 +16,9 @@ def test_generate_returns_artifact(mocker):
     # 2. Mock the GitHub push
     mocker.patch("app.main.commit_and_push", return_value="mock123")
     
-    # 3. DOUBLE PROTECTION:
-    # First, mock the function call inside main.py
-    mocker.patch("app.main.write_generation_metadata", return_value=True)
-    # Second, mock the DataHub class in the writeback module so the REAL code 
-    # definitely cannot establish a connection even if it wanted to.
-    mocker.patch("app.datahub.writeback.DatahubRestEmitter")
+    # 3. FIX: Patch the ACTUAL source of the class, not the import
+    # This intercepts the library directly so no connection can ever be made.
+    mocker.patch("datahub.emitter.rest_emitter.DatahubRestEmitter")
 
     # Execute the request
     resp = client.post('/generate', json={'task': 'Generate an Airflow DAG for the fct_users_created table'})
