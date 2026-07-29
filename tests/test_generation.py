@@ -16,8 +16,8 @@ def test_generate_returns_artifact(mocker):
     # 2. Mock the GitHub push
     mocker.patch("app.main.commit_and_push", return_value="mock123")
     
-    # 3. FIX: Mock the DataHub class to prevent connection attempts
-    mocker.patch("app.datahub.writeback.DatahubRestEmitter")
+    # 3. FIX: Patch the instance variable 'emitter' directly
+    mocker.patch("app.datahub.writeback.emitter")
 
     # Execute the request
     resp = client.post('/generate', json={'task': 'Generate an Airflow DAG for the fct_users_created table'})
