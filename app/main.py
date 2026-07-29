@@ -8,6 +8,7 @@ from app.datahub.client import MetadataService
 from app.llm.provider import generate
 from app.security.validator import extract_code_blocks, save_and_validate
 from app.github.service import commit_and_push
+from app.datahub.writeback import write_generation_metadata
 
 app = FastAPI(title="AI Data Pipeline Generator")
 
@@ -111,6 +112,14 @@ def generate_pipeline(req: GenerateRequest):
         
         # Trigger GitHub auto-commit
         commit_hash = commit_and_push(req.task)
+        
+        # Trigger DataHub write-back
+        write_generation_metadata(
+            table_name=table_name, 
+            artifact_path=result["artifact_path"], 
+            prompt=prompt, 
+            commit_hash=commit_hash
+        )
         
         # 5. Format the final API response
         return GenerateResponse(
