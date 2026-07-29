@@ -130,5 +130,10 @@ def generate_pipeline(req: GenerateRequest):
             commit=commit_hash
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )

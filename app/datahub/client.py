@@ -1,6 +1,10 @@
+import os
+from dotenv import load_dotenv
 from dataclasses import dataclass
 from typing import List, Dict
 from fastapi import HTTPException
+
+load_dotenv()
 
 # Import the direct SDK client tools you used on Day 2
 from datahub.ingestion.graph.client import DataHubGraph, DatahubClientConfig
@@ -22,10 +26,16 @@ class TableMetadata:
 
 class MetadataService:
     def __init__(self):
-        # Initialize the graph client pointing to local GMS, bypassing the MCP server
-        self.graph = DataHubGraph(DatahubClientConfig(server='http://localhost:8080'))
-        
-        # Hardcoding the platform and environment based on Day 2's sample URN
+        self.graph = DataHubGraph(
+            DatahubClientConfig(
+                server=os.getenv(
+                    "DATAHUB_GMS",
+                    "http://localhost:8080"
+                )
+            )
+        )
+
+        # Platform and environment
         self.platform = "hive"
         self.env = "PROD"
 
