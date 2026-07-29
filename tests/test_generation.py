@@ -21,8 +21,8 @@ def test_generate_returns_artifact(mocker):
     # 2. Mock the GitHub push so we don't actually push to Git during tests
     mocker.patch("app.main.commit_and_push", return_value="mock123")
     
-    # 3. Mock the DataHub write-back so we don't spam DataHub during tests
-    mocker.patch("app.main.write_generation_metadata", return_value=True)
+    # 3. CRITICAL: Mock the DataHub write-back at its source
+    mocker.patch("app.datahub.writeback.write_generation_metadata", return_value=True)
 
     # Execute the request
     resp = client.post('/generate', json={'task': 'Generate an Airflow DAG for the fct_users_created table'})
