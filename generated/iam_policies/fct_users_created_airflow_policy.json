@@ -1,0 +1,36 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowAirflowToReadFromHive",
+      "Effect": "Allow",
+      "Action": [
+        "hive:GetTable",
+        "hive:GetPartition",
+        "hive:GetDatabase"
+      ],
+      "Resource": [
+        "arn:aws:hive:region:account-id:database/default",
+        "arn:aws:hive:region:account-id:table/default/logging_events",
+        "arn:aws:hive:region:account-id:table/default/fct_users_created"
+      ]
+    },
+    {
+      "Sid": "AllowAirflowToWriteToFctUsersCreated",
+      "Effect": "Allow",
+      "Action": [
+        "hive:InsertIntoTable",
+        "hive:UpdateTable"
+      ],
+      "Resource": [
+        "arn:aws*hive:region:account-id:table/default/fct_users_created"
+      ]
+    },
+    {
+      "Sid": "AllowAirflowToAssumeRole",
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::account-id:role/AirflowRole"
+    }
+  ]
+}
