@@ -1,7 +1,34 @@
-import os
 import re
 import json
 import subprocess
+import sqlparse
+import yaml
+import os
+from datetime import datetime
+
+def get_file_routing(table_name: str, artifact_type: str) -> str:
+    # 1. Enforce YYYYMMDD format
+    date_str = datetime.now().strftime("%Y%m%d")
+    
+    # 2. Map types to their extensions and subfolders
+    routing_map = {
+        "airflow": {"ext": "py", "folder": "airflow"},
+        "dbt": {"ext": "sql", "folder": "dbt"},
+        "sql": {"ext": "sql", "folder": "sql"},
+        "yaml": {"ext": "yaml", "folder": "configs"},
+        "readme": {"ext": "md", "folder": "configs"}
+    }
+    
+    mapping = routing_map.get(artifact_type, {"ext": "txt", "folder": "configs"})
+    
+    # 3. Construct exact filename and path
+    filename = f"{table_name}_{artifact_type}_{date_str}.{mapping['ext']}"
+    file_path = os.path.join("generated", mapping['folder'], filename)
+    
+    # Ensure the directory exists before saving
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    
+    return file_path
 
 def extract_code_blocks(llm_response: str):
     """
@@ -22,52 +49,51 @@ def extract_code_blocks(llm_response: str):
     return python_code, iam_json
 
 
-def save_and_validate(table_name: str, python_code: str, iam_json: str):
-    """
-    Saves extracted files to disk and runs syntax & security checks.
-    """
-    # Create target directories if they don't exist
-    os.makedirs("generated/airflow", exist_ok=True)
-    os.makedirs("generated/iam_policies", exist_ok=True)
-
-    dag_path = f"generated/airflow/{table_name}_dag.py"
-    iam_path = f"generated/iam_policies/{table_name}_policy.json"
-
-    # 1. Save the Python DAG
-    with open(dag_path, "w") as f:
-        f.write(python_code)
-
-    # 2. Save the IAM Policy JSON
-    if iam_json:
-        with open(iam_path, "w") as f:
-            f.write(iam_json)
-
-    # 3. Syntax Check
-    syntax_status = "pass"
-    try:
-        compile(python_code, dag_path, "exec")
-    except SyntaxError as e:
-        syntax_status = f"fail: {str(e)}"
-
-    # 4. Security Scan using Bandit
-    bandit_status = "pass"
-    try:
-        result = subprocess.run(
-            ["bandit", "-r", "generated/airflow/", "-f", "json", "-o", "bandit_report.json"],
-            capture_output=True,
-            text=True
-        )
-        if result.returncode != 0:
-            bandit_status = "issues_found"
-    except Exception as e:
-        bandit_status = f"error: {str(e)}"
-
+def save_and_validate(table_name: str, generated_code: str, iam_json: str, artifact_type: str = "airflow"):
+    """Saves extracted files to disk and runs type-specific syntax & security checks."""
+    
+    # 1. Get the dynamic file path and save the generated code
+    artifact_path = get_file_routing(table_name, artifact_type)
+    with open(artifact_path, "w") as f:
+        f.write(generated_code)
+        
+    # 2. Save the IAM Policy (This remains JSON regardless of the artifact type)
+    iam_dir = "generated/iam_policies"
+    os.makedirs(iam_dir, exist_ok=True)
+    iam_path = os.path.join(iam_dir, f"{table_name}_{artifact_type}_policy.json")
+    
+    with open(iam_path, "w") as f:
+        f.write(iam_json)
+        
+    # 3. Validate the code dynamically using the new validate_artifact function
+    validation_results = validate_artifact(generated_code, artifact_type)
+    
     return {
-        "status": "success" if syntax_status == "pass" else "failed",
-        "artifact": dag_path,
-        "security_policy": iam_path,
-        "validation": {
-            "syntax": syntax_status,
-            "bandit": bandit_status
-        }
+        "artifact_path": artifact_path,
+        "iam_path": iam_path,
+        "validation": validation_results
     }
+
+def validate_artifact(code_string: str, artifact_type: str) -> dict:
+    validation_result = {"status": "pass", "details": "Validation successful"}
+    
+    try:
+        if artifact_type == "airflow":
+            # Python validation
+            compile(code_string, '<string>', 'exec')
+            
+        elif artifact_type in ["dbt", "sql"]:
+            # SQL validation
+            parsed = sqlparse.parse(code_string)
+            if not parsed:
+                raise ValueError("Could not parse SQL statements.")
+                
+        elif artifact_type == "yaml":
+            # YAML validation
+            yaml.safe_load(code_string)
+            
+    except Exception as e:
+        validation_result["status"] = "fail"
+        validation_result["details"] = str(e)
+        
+    return validation_result

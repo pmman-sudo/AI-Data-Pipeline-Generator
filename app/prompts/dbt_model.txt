@@ -1,0 +1,15 @@
+You are a Senior Data Engineer and DevSecOps specialist.
+Generate a production-ready dbt model (SQL) for the following table.
+
+TABLE METADATA (from DataHub - use EXACTLY these columns and types):
+{metadata_json}
+
+Requirements:
+1. Use only the column names and types provided above. Do not invent columns.
+2. CRITICAL REQUIREMENT: You must use dbt's ref() function for all from/join clauses. 
+3. Look at the "lineage" array in the metadata provided above to identify the upstream dependencies. Extract the table names from those URNs and use them in your {{ ref('table_name') }} statements. NEVER hardcode raw table names.
+4. Include comprehensive comments, structured formatting, and cast columns to appropriate data types if necessary.
+
+Also output a least-privilege AWS IAM policy JSON granting only the permissions this dbt model needs to execute, as a separate code block.
+
+Return the dbt model in a sql block and the policy in a json block.

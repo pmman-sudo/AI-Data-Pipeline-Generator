@@ -1,5 +1,5 @@
 import json
-from typing import Dict
+from typing import Dict, Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +23,23 @@ app.add_middleware(
 # --- PYDANTIC MODELS FOR API DOCS ---
 class GenerateRequest(BaseModel):
     task: str
+    artifact_type: Optional[str] = None
+
+    def get_inferred_type(self) -> str:
+        if self.artifact_type:
+            return self.artifact_type.lower()
+            
+        task_lower = self.task.lower()
+        if "dbt" in task_lower:
+            return "dbt"
+        elif "sql" in task_lower:
+            return "sql"
+        elif "yaml" in task_lower or "config" in task_lower:
+            return "yaml"
+        elif "readme" in task_lower:
+            return "readme"
+        else:
+            return "airflow" # Default fallback
 
 class GenerateResponse(BaseModel):
     status: str
@@ -44,38 +61,61 @@ def get_schema(table: str):
 
 @app.post("/generate", response_model=GenerateResponse)
 def generate_pipeline(req: GenerateRequest):
-    # Simple extraction: look for the word after 'for' or default to fct_users_created
+    # 1. Infer the artifact type using the method you added earlier
+    artifact_type = req.get_inferred_type()
+    
+    # 2. Map the artifact type to the exact prompt template file
+    template_map = {
+        "airflow": "airflow_dag.txt",
+        "dbt": "dbt_model.txt",
+        "sql": "sql_query.txt",
+        "yaml": "yaml_config.txt",
+        "readme": "readme.txt"
+    }
+    template_file = template_map.get(artifact_type, "airflow_dag.txt")
+    
+    # Simple table extraction: look for the word after 'for', skipping 'the'
     words = req.task.split()
-    table_name = "fct_users_created"
+    table_name = "fct_users_created" # Default fallback
+    
     if "for" in words:
         idx = words.index("for")
         if idx + 1 < len(words):
-            table_name = words[idx + 1].strip()
-
+            next_word = words[idx + 1].strip()
+            # If the next word is "the", grab the word after it instead
+            if next_word.lower() == "the" and idx + 2 < len(words):
+                table_name = words[idx + 2].strip()
+            else:
+                table_name = next_word
+            
     try:
-        # 1. Fetch prompt template
-        with open("app/prompts/airflow_dag.txt", "r") as f:
+        # 3. Load the correct, dynamic prompt template
+        with open(f"app/prompts/{template_file}", "r") as f:
             template = f.read()
-
-        # 2. Get live DataHub metadata
+            
+        # Get live DataHub metadata
         metadata_service = MetadataService()
         metadata = metadata_service.get_table_context(table_name)
-
-        # 3. Inject metadata & call LLM (Groq)
+        
+        # Inject metadata & call LLM
         metadata_json = json.dumps(metadata.__dict__, indent=2)
         prompt = template.format(metadata_json=metadata_json)
         raw_response = generate(prompt)
-
-        # 4. Extract code, save artifacts, and run validation
-        python_code, iam_json = extract_code_blocks(raw_response)
-        result = save_and_validate(table_name, python_code, iam_json)
         
-        # Add the pending commit placeholder for Day 7
-        result["commit"] = "pending"
-
-        return result
-
-    except HTTPException as e:
-        raise e
+        # 4. Extract code, save, and validate WITH the artifact_type passed in
+        generated_code, iam_json = extract_code_blocks(raw_response)
+        
+        # Call the updated save_and_validate
+        result = save_and_validate(table_name, generated_code, iam_json, artifact_type)
+        
+        # 5. Format the final API response using the dictionary returned by save_and_validate
+        return GenerateResponse(
+            status="success",
+            artifact=result["artifact_path"],
+            security_policy=result["iam_path"],
+            validation=result["validation"],
+            commit="pending"
+        )
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

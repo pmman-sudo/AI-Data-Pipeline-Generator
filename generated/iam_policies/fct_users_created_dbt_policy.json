@@ -1,0 +1,21 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowDbtModelExecution",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:PutObject",
+        "dbt:ExecuteSqlQuery"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-bucket-name",
+        "arn:aws:s3:::your-bucket-name/*",
+        "arn:aws:lakeformation:region:account-id:database/your-database-name",
+        "arn:aws:lakeformation:region:account-id:table/your-table-name"
+      ]
+    }
+  ]
+}
