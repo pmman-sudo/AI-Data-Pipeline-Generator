@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.datahub.client import MetadataService
 from app.llm.provider import generate
 from app.security.validator import extract_code_blocks, save_and_validate
+from app.github.service import commit_and_push
 
 app = FastAPI(title="AI Data Pipeline Generator")
 
@@ -108,13 +109,16 @@ def generate_pipeline(req: GenerateRequest):
         # Call the updated save_and_validate
         result = save_and_validate(table_name, generated_code, iam_json, artifact_type)
         
-        # 5. Format the final API response using the dictionary returned by save_and_validate
+        # Trigger GitHub auto-commit
+        commit_hash = commit_and_push(req.task)
+        
+        # 5. Format the final API response
         return GenerateResponse(
             status="success",
             artifact=result["artifact_path"],
             security_policy=result["iam_path"],
             validation=result["validation"],
-            commit="pending"
+            commit=commit_hash
         )
         
     except Exception as e:
