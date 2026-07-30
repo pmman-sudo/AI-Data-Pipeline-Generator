@@ -2,35 +2,47 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AllowAirflowToReadFromHive",
+      "Sid": "ReadFromTable",
       "Effect": "Allow",
       "Action": [
-        "hive:GetTable",
-        "hive:GetPartition",
-        "hive:GetDatabase"
+        "s3:GetObject",
+        "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws:hive:region:account-id:database/default",
-        "arn:aws:hive:region:account-id:table/default/logging_events",
-        "arn:aws:hive:region:account-id:table/default/fct_users_created"
+        "arn:aws:s3:::example-bucket/fct_users_created/*",
+        "arn:aws:s3:::example-bucket"
       ]
     },
     {
-      "Sid": "AllowAirflowToWriteToFctUsersCreated",
+      "Sid": "WriteToDestination",
       "Effect": "Allow",
       "Action": [
-        "hive:InsertIntoTable",
-        "hive:UpdateTable"
+        "s3:PutObject",
+        "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws*hive:region:account-id:table/default/fct_users_created"
+        "arn:aws:s3:::example-destination-bucket/*",
+        "arn:aws:s3:::example-destination-bucket"
       ]
     },
     {
-      "Sid": "AllowAirflowToAssumeRole",
+      "Sid": "ExecuteAirflow",
       "Effect": "Allow",
-      "Action": "sts:AssumeRole",
-      "Resource": "arn:aws:iam::account-id:role/AirflowRole"
+      "Action": [
+        "airflow:RunDag",
+        "airflow:CreateDagRun"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudWatchLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*"
     }
   ]
 }

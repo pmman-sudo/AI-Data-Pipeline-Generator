@@ -1,18 +1,18 @@
 """
-This DAG creates a fact table of newly created users.
-
-The DAG extracts the required columns (user_id and user_name) from the Hive dataset logging_events in the PROD environment.
-It then loads the data into the fct_users_created table.
+This DAG is designed to handle the 'fct_users_created' table metadata.
+It uses Airflow to manage the workflow and includes retries, exponential backoff, 
+structured logging, and explicit error handling.
 """
+
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.providers.apache.hive.operators.hive import HiveOperator
-from airflow.utils.db import provide_session
-from airflow.utils.log.logging_mixin import LoggingMixin
+from airflow.utils.dates import days_ago
 import logging
-import json
+import requests
+import os
 
+# Define the DAG
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -22,58 +22,81 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
 }
 
-def extract_data(**kwargs):
-    """
-    Extracts data from the Hive dataset logging_events.
-
-    :param kwargs: Keyword arguments
-    :return: None
-    """
-    logging.info('Extracting data from Hive')
-    try:
-        # Using HiveOperator to extract data
-        HiveOperator(
-            task_id='extract_data',
-            hive_cli_conn_id='hive_default',
-            sql='SELECT user_id, user_name FROM logging_events',
-            dag=dag
-        )
-    except Exception as e:
-        logging.error(f'Error extracting data: {e}')
-
-def load_data(**kwargs):
-    """
-    Loads the extracted data into the fct_users_created table.
-
-    :param kwargs: Keyword arguments
-    :return: None
-    """
-    logging.info('Loading data into fct_users_created')
-    try:
-        # Using HiveOperator to load data
-        HiveOperator(
-            task_id='load_data',
-            hive_cli_conn_id='hive_default',
-            sql='INSERT INTO fct_users_created SELECT user_id, user_name FROM logging_events',
-            dag=dag
-        )
-    except Exception as e:
-        logging.error(f'Error loading data: {e}')
-
 with DAG(
-    'fct_users_created_dag',
+    'fct_users_created',
     default_args=default_args,
-    description='A DAG to create the fct_users_created fact table',
-    schedule_interval='0 8 * * *',
-    start_date=datetime(2023, 1, 1),
-    catchup=False,
+    description='A DAG for handling fct_users_created table metadata',
+    schedule_interval=timedelta(days=1),
+    start_date=days_ago(1),
+    tags=['fct_users_created'],
 ) as dag:
-    extract_data_task = PythonOperator(
-        task_id='extract_data',
-        python_callable=extract_data
+    def fetch_data(**kwargs):
+        """
+        Fetch data from the 'fct_users_created' table.
+        
+        :param kwargs: Keyword arguments
+        :return: None
+        """
+        try:
+            # Use the requests library to fetch data from the table
+            url = "https://example.com/fct_users_created"  # Replace with actual URL
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+            logging.info(f"Fetched {len(data)} records from 'fct_users_created' table")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error fetching data: {e}")
+            raise
+
+    def process_data(**kwargs):
+        """
+        Process the fetched data.
+        
+        :param kwargs: Keyword arguments
+        :return: None
+        """
+        try:
+            # Use the fetched data to perform some processing
+            # Replace with actual processing logic
+            logging.info("Processing data...")
+        except Exception as e:
+            logging.error(f"Error processing data: {e}")
+            raise
+
+    def load_data(**kwargs):
+        """
+        Load the processed data into a destination.
+        
+        :param kwargs: Keyword arguments
+        :return: None
+        """
+        try:
+            # Use the processed data to load it into a destination
+            # Replace with actual loading logic
+            logging.info("Loading data...")
+        except Exception as e:
+            logging.error(f"Error loading data: {e}")
+            raise
+
+    fetch_data_task = PythonOperator(
+        task_id='fetch_data',
+        python_callable=fetch_data,
+        retries=3,
+        retry_delay=timedelta(minutes=5),
     )
+
+    process_data_task = PythonOperator(
+        task_id='process_data',
+        python_callable=process_data,
+        retries=3,
+        retry_delay=timedelta(minutes=5),
+    )
+
     load_data_task = PythonOperator(
         task_id='load_data',
-        python_callable=load_data
+        python_callable=load_data,
+        retries=3,
+        retry_delay=timedelta(minutes=5),
     )
-    extract_data_task >> load_data_task
+
+    fetch_data_task >> process_data_task >> load_data_task
