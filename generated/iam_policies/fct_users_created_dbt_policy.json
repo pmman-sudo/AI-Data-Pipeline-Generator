@@ -1,33 +1,31 @@
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "dbtExecutionPolicy",
-            "Effect": "Allow",
-            "Action": [
-                "glue:GetDatabase",
-                "glue:GetPartitions",
-                "glue:GetPartition",
-                "glue:GetTable",
-                "glue:GetTables",
-                "glue:GetTableVersions",
-                "glue:GetTableVersion"
-            ],
-            "Resource": [
-                "*"
-            ]
-        },
-        {
-            "Sid": "dbtExecutionPolicy",
-            "Effect": "Allow",
-            "Action": [
-                "s3:GetObject",
-                "s3:ListBucket",
-                "s3:PutObject"
-            ],
-            "Resource": [
-                "arn:aws:s3:::your-bucket-name/*"
-            ]
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DbtModelExecutionPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::my-bucket/data",
+        "arn:aws:s3:::my-bucket/"
+      ]
+    },
+    {
+      "Sid": "DbtModelGluePermissions",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetTable",
+        "glue:GetTables",
+        "glue:GetDatabase",
+        "glue:GetDatabases"
+      ],
+      "Resource": [
+        "arn:aws:glue:region:account-id:database/my-database",
+        "arn:aws:glue:region:account-id:table/my-database/my-table"
+      ]
+    }
+  ]
 }
