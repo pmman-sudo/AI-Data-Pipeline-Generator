@@ -2,41 +2,26 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "AllowFctUsersCreatedTableCreation",
+            "Sid": "AllowHiveAccess",
             "Effect": "Allow",
             "Action": [
-                "s3:PutObject",
-                "s3:GetObject",
-                "s3:ListBucket",
-                "s3:DeleteObject"
+                "hive:CreateTable",
+                "hive:InsertData"
             ],
-            "Resource": "arn:aws:s3:::your-bucket-name/fct_users_created"
+            "Resource": [
+                "arn:aws:hive:REGION:ACCOUNT_ID:database/DATABASE_NAME",
+                "arn:aws:hive:REGION:ACCOUNT_ID:table/DATABASE_NAME/fct_users_created"
+            ]
         },
         {
-            "Sid": "AllowLoggingEventsTableRead",
+            "Sid": "AllowLogging",
             "Effect": "Allow",
             "Action": [
-                "s3:GetObject",
-                "s3:ListBucket"
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
             ],
-            "Resource": "arn:aws:s3:::your-bucket-name/logging_events"
-        },
-        {
-            "Sid": "AllowGlueDatabaseAccess",
-            "Effect": "Allow",
-            "Action": [
-                "glue:GetDatabase",
-                "glue:GetTable",
-                "glue:CreateTable",
-                "glue:UpdateTable"
-            ],
-            "Resource": "arn:aws:glue:region:account-id:database/your-database-name"
-        },
-        {
-            "Sid": "AllowIAMPassRole",
-            "Effect": "Allow",
-            "Action": "iam:PassRole",
-            "Resource": "arn:aws:iam::account-id:role/your-role-name"
+            "Resource": "arn:aws:logs:REGION:ACCOUNT_ID:log-group:airflow-logs"
         }
     ]
 }
