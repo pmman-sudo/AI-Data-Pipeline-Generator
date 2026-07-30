@@ -2,28 +2,43 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "AllowCreateTable",
+            "Sid": "AllowFctUsersCreatedTable",
             "Effect": "Allow",
-            "Action": "hive:CreateTable",
-            "Resource": "arn:aws:hive:REGION:ACCOUNT_ID:table/PROD/fct_users_created"
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:ListBucket",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::my-bucket/fct_users_created/*"
+            ]
         },
         {
-            "Sid": "AllowLoadData",
+            "Sid": "AllowEmrCluster",
             "Effect": "Allow",
-            "Action": "hive:LoadData",
-            "Resource": "arn:aws:hive:REGION:ACCOUNT_ID:table/PROD/fct_users_created"
+            "Action": [
+                "emr:RunJobFlow",
+                "emr:DescribeCluster",
+                "emr:ListClusters",
+                "emr:DescribeStep",
+                "emr:ListSteps"
+            ],
+            "Resource": [
+                "arn:aws:emr:::cluster/*"
+            ]
         },
         {
-            "Sid": "AllowGetTable",
+            "Sid": "AllowFctUsersCreatedTableMetadata",
             "Effect": "Allow",
-            "Action": "hive:GetTable",
-            "Resource": "arn:aws:hive:REGION:ACCOUNT_ID:table/PROD/fct_users_created"
-        },
-        {
-            "Sid": "AllowListTables",
-            "Effect": "Allow",
-            "Action": "hive:ListTables",
-            "Resource": "arn:aws:hive:REGION:ACCOUNT_ID:database/PROD"
+            "Action": [
+                "glue:GetTable",
+                "glue:GetTables",
+                "glue:UpdateTable"
+            ],
+            "Resource": [
+                "arn:aws:glue:::table/my-database/fct_users_created"
+            ]
         }
     ]
 }
