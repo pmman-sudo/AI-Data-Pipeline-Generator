@@ -1,27 +1,27 @@
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "AllowHiveAccess",
-            "Effect": "Allow",
-            "Action": [
-                "hive:CreateTable",
-                "hive:InsertData"
-            ],
-            "Resource": [
-                "arn:aws:hive:REGION:ACCOUNT_ID:database/DATABASE_NAME",
-                "arn:aws:hive:REGION:ACCOUNT_ID:table/DATABASE_NAME/fct_users_created"
-            ]
-        },
-        {
-            "Sid": "AllowLogging",
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": "arn:aws:logs:REGION:ACCOUNT_ID:log-group:airflow-logs"
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-bucket-name",
+        "arn:aws:s3:::your-bucket-name/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "hive:GetTable",
+        "hive:Select"
+      ],
+      "Resource": [
+        "arn:aws:hive::your-account-id:table/logging_events"
+      ]
+    }
+  ]
 }

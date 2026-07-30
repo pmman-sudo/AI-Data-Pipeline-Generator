@@ -1,71 +1,63 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.utils.log import logging
-from airflow.exceptions import AirflowException
-import pytz
+from airflow.providers.amazon.aws.operators.s3 import S3KeySensor
+from airflow.providers.amazon.aws.transfers.s3 import S3Key
+import logging
 
 default_args = {
-    'owner': 'jdoe',
+    'owner': 'urn:li:corpuser:jdoe, urn:li:corpuser:datahub',
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 3,
     'retry_delay': timedelta(minutes=5),
-    'retry_exponential_backoff': True,
 }
 
-def create_fct_users_created(**kwargs):
+def fetch_data(**kwargs):
+    """
+    Fetches data from the logging_events table in Hive and creates a fact table fct_users_created.
+    
+    :param kwargs: Keyword arguments
+    :return: None
+    """
     try:
-        from airflow.providers.apache.hive.operators.hive import HiveOperator
-        from airflow.providers.apache.hive.transfers.hive_to_hive import HiveToHiveOperator
+        # Import necessary libraries
+        from pyspark.sql import SparkSession
+        from pyspark.sql.functions import col
 
-        hive_conn_id = 'hive_default'
+        # Create a Spark session
+        spark = SparkSession.builder.appName('fct_users_created').getOrCreate()
 
-        logging.info('Creating fct_users_created table')
-        create_table_sql = """
-            CREATE TABLE IF NOT EXISTS fct_users_created (
-                user_id VARCHAR(100),
-                user_name BOOLEAN
-            );
-        """
-        hive_op = HiveOperator(
-            task_id='create_fct_users_created_table',
-            hive_cli_conn_id=hive_conn_id,
-            sql=create_table_sql,
+        # Read data from logging_events table
+        logging_events_df = spark.read.format('hive').load('logging_events')
+
+        # Create fct_users_created fact table
+        fct_users_created_df = logging_events_df.select(
+            col('user_id').cast('string'),
+            col('user_name').cast('boolean')
         )
-        hive_op.execute(context=kwargs)
 
-        logging.info('Loading data into fct_users_created table')
-        load_data_sql = """
-            INSERT INTO fct_users_created
-            SELECT 
-                user_id,
-                user_name
-            FROM 
-                logging_events;
-        """
-        hive_op = HiveOperator(
-            task_id='load_data_into_fct_users_created_table',
-            hive_cli_conn_id=hive_conn_id,
-            sql=load_data_sql,
-        )
-        hive_op.execute(context=kwargs)
+        # Write data to fct_users_created table
+        fct_users_created_df.write.format('hive').saveAsTable('fct_users_created')
 
-    except AirflowException as e:
-        logging.error(f'Error creating fct_users_created table: {e}')
-        raise
+        # Stop the Spark session
+        spark.stop()
+
+        logging.info('Data fetched and fct_users_created table created successfully')
+
+    except Exception as e:
+        logging.error('Error fetching data: %s', e)
 
 with DAG(
     'fct_users_created_dag',
     default_args=default_args,
-    description='A DAG to create fct_users_created table',
+    description='A DAG to create fct_users_created fact table',
     schedule_interval=timedelta(days=1),
-    start_date=datetime(2022, 1, 1, tzinfo=pytz.UTC),
-    tags=[],
+    start_date=datetime(2024, 1, 1),
+    catchup=False,
 ) as dag:
-    create_fct_users_created_task = PythonOperator(
-        task_id='create_fct_users_created',
-        python_callable=create_fct_users_created,
+    fetch_data_task = PythonOperator(
+        task_id='fetch_data',
+        python_callable=fetch_data
     )
-    create_fct_users_created_task
