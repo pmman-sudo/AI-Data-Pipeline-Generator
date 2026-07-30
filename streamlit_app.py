@@ -1,12 +1,12 @@
 import streamlit as st
 import requests
+from pathlib import Path
 
 # ==========================================
 # FastAPI Backend
 # ==========================================
 
 API_URL = "http://127.0.0.1:8000"
-
 
 # ==========================================
 # Helper Functions
@@ -16,7 +16,6 @@ def get_table_metadata(table_name: str):
     """
     Fetch metadata for a table from FastAPI.
     """
-
     try:
         response = requests.get(
             f"{API_URL}/schema/{table_name}",
@@ -66,7 +65,6 @@ try:
 
     if health.status_code == 200:
         st.success("✅ Backend Connected")
-
     else:
         st.error("❌ Backend Not Ready")
 
@@ -76,7 +74,7 @@ except Exception:
 st.divider()
 
 # ==========================================
-# Metadata Preview
+# Metadata Explorer
 # ==========================================
 
 st.header("📊 Metadata Explorer")
@@ -138,6 +136,17 @@ st.divider()
 
 st.header("🤖 AI Pipeline Generator")
 
+artifact_type = st.selectbox(
+    "Artifact Type",
+    [
+        "airflow",
+        "sql",
+        "dbt",
+        "yaml",
+        "readme"
+    ]
+)
+
 task = st.text_area(
     "Describe what you want to generate",
     height=180,
@@ -155,7 +164,7 @@ generate = st.button(
 )
 
 # ==========================================
-# Generate
+# Generate Pipeline
 # ==========================================
 
 if generate:
@@ -171,7 +180,8 @@ if generate:
             response = requests.post(
                 f"{API_URL}/generate",
                 json={
-                    "task": task
+                    "task": task,
+                    "artifact_type": artifact_type
                 },
                 timeout=120
             )
@@ -184,39 +194,90 @@ if generate:
 
                 st.divider()
 
-                # -------------------------
-                # Artifact
-                # -------------------------
+                # ==========================================
+                # Generated Artifact
+                # ==========================================
+
+                artifact_path = result["artifact"]
 
                 st.subheader("📄 Generated Artifact")
+                st.code(artifact_path)
 
-                st.code(
-                    result["artifact"],
-                    language="text"
-                )
+                generated_code = ""
 
-                # -------------------------
+                try:
+
+                    with open(
+                        artifact_path,
+                        "r",
+                        encoding="utf-8"
+                    ) as f:
+
+                        generated_code = f.read()
+
+                    st.subheader("💻 Generated Code")
+
+                    language_map = {
+                        "airflow": "python",
+                        "sql": "sql",
+                        "dbt": "sql",
+                        "yaml": "yaml",
+                        "readme": "markdown"
+                    }
+
+                    st.code(
+                        generated_code,
+                        language=language_map.get(
+                            artifact_type,
+                            "text"
+                        )
+                    )
+
+                    st.download_button(
+                        label="⬇ Download Artifact",
+                        data=generated_code,
+                        file_name=Path(artifact_path).name,
+                        mime="text/plain"
+                    )
+
+                except Exception as e:
+
+                    st.warning(
+                        f"Could not open generated file:\n\n{e}"
+                    )
+
+                # ==========================================
                 # Security Policy
-                # -------------------------
+                # ==========================================
 
                 st.subheader("🔒 Security Policy")
 
                 st.code(
                     result["security_policy"],
-                    language="text"
+                    language="json"
                 )
 
-                # -------------------------
+                # ==========================================
                 # Validation
-                # -------------------------
+                # ==========================================
 
                 st.subheader("🛡 Validation")
 
-                st.json(result["validation"])
+                validation = result["validation"]
 
-                # -------------------------
+                if validation["status"] == "pass":
+
+                    st.success("✅ Validation Passed")
+
+                else:
+
+                    st.error("❌ Validation Failed")
+
+                st.json(validation)
+
+                # ==========================================
                 # Git Commit
-                # -------------------------
+                # ==========================================
 
                 st.subheader("🔗 Git Commit")
 
@@ -228,4 +289,5 @@ if generate:
 
         except Exception as e:
 
-            st.error(str(e))
+            st.error(f"Error:\n\n{e}")
+            
