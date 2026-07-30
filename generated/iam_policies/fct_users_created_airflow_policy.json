@@ -2,34 +2,41 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "AllowDAGExecution",
+            "Sid": "AllowFctUsersCreatedTableCreation",
             "Effect": "Allow",
             "Action": [
-                "airflow:StartDAG",
-                "airflow:StopDAG",
-                "airflow:ListDAGs"
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:ListBucket",
+                "s3:DeleteObject"
             ],
-            "Resource": "*"
+            "Resource": "arn:aws:s3:::your-bucket-name/fct_users_created"
         },
         {
-            "Sid": "AllowDatabaseAccess",
+            "Sid": "AllowLoggingEventsTableRead",
             "Effect": "Allow",
             "Action": [
-                "rds:DescribeDBInstances",
-                "rds:DescribeDBClusters",
-                "rds:DescribeDatabases"
+                "s3:GetObject",
+                "s3:ListBucket"
             ],
-            "Resource": "*"
+            "Resource": "arn:aws:s3:::your-bucket-name/logging_events"
         },
         {
-            "Sid": "AllowLogging",
+            "Sid": "AllowGlueDatabaseAccess",
             "Effect": "Allow",
             "Action": [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
+                "glue:GetDatabase",
+                "glue:GetTable",
+                "glue:CreateTable",
+                "glue:UpdateTable"
             ],
-            "Resource": "arn:aws:logs:*:*:*"
+            "Resource": "arn:aws:glue:region:account-id:database/your-database-name"
+        },
+        {
+            "Sid": "AllowIAMPassRole",
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": "arn:aws:iam::account-id:role/your-role-name"
         }
     ]
 }

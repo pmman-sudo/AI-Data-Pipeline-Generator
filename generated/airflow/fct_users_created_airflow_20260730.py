@@ -1,76 +1,61 @@
-"""
-This DAG is used to manage the fct_users_created table.
-It includes tasks to handle user creation and provides
-structured logging, explicit error handling, and retries with exponential backoff.
-
-"""
+from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.utils.dates import days_ago
-from airflow.utils.log.logging_mixin import LoggingMixin
-from datetime import datetime, timedelta
+from airflow.utils.log import LoggingMixin
+from structlog import get_logger
 
-# Define constants for exponential backoff
-RETRIES = 3
-RETRY_DELAY = timedelta(seconds=10)
-DEFAULT_ARGS = {
-    'owner': 'airflow',
+logger = get_logger(__name__)
+
+default_args = {
+    'owner': 'jdoe',
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': RETRIES,
-    'retry_delay': RETRY_DELAY,
+    'retries': 3,
+    'retry_delay': timedelta(minutes=5),
+    'retry_exponential_backoff': True
 }
 
-def create_user(**kwargs):
+def create_fct_users_created(**kwargs):
     """
-    Task to create a new user in the fct_users_created table.
-    
-    :param kwargs: Airflow task context
-    :return: None
+    Creates the fct_users_created table and populates it with data.
     """
     try:
-        # Here you should implement the logic to create a new user
-        # This is a placeholder function and does not create a user in the actual database
-        LoggingMixin().log.info('Creating user with id: %s and name: %s', kwargs['user_id'], kwargs['user_name'])
-    except Exception as e:
-        LoggingMixin().log.error('Error creating user: %s', str(e))
-        raise
+        # Import necessary libraries
+        from pyspark.sql import SparkSession
+        from pyspark.sql.functions import col
 
-def get_user(**kwargs):
-    """
-    Task to get a user from the fct_users_created table.
-    
-    :param kwargs: Airflow task context
-    :return: None
-    """
-    try:
-        # Here you should implement the logic to get a user
-        # This is a placeholder function and does not get a user from the actual database
-        LoggingMixin().log.info('Getting user with id: %s', kwargs['user_id'])
+        # Create Spark Session
+        spark = SparkSession.builder.appName('fct_users_created').getOrCreate()
+
+        # Load data from upstream table
+        logging_events_df = spark.read.table('logging_events')
+
+        # Transform data
+        fct_users_created_df = logging_events_df.select(
+            col('user_id').cast('string').alias('user_id'),
+            col('user_name').cast('boolean').alias('user_name')
+        )
+
+        # Write data to fct_users_created table
+        fct_users_created_df.write.saveAsTable('fct_users_created')
+
+        logger.info('fct_users_created table created and populated')
+
     except Exception as e:
-        LoggingMixin().log.error('Error getting user: %s', str(e))
+        logger.error(f'Error creating fct_users_created table: {str(e)}')
         raise
 
 with DAG(
     'fct_users_created_dag',
-    default_args=DEFAULT_ARGS,
-    description='A DAG to manage fct_users_created table',
+    default_args=default_args,
+    description='Creates the fct_users_created table and populates it with data',
     schedule_interval=timedelta(days=1),
-    start_date=days_ago(1),
+    start_date=datetime(2023, 1, 1),
     catchup=False,
+    tags=[]
 ) as dag:
-    create_user_task = PythonOperator(
-        task_id='create_user_task',
-        python_callable=create_user,
-        op_kwargs={'user_id': 'user123', 'user_name': True}
+    create_fct_users_created_task = PythonOperator(
+        task_id='create_fct_users_created',
+        python_callable=create_fct_users_created
     )
-    get_user_task = PythonOperator(
-        task_id='get_user_task',
-        python_callable=get_user,
-        op_kwargs={'user_id': 'user123'}
-    )
-    end_task = DummyOperator(
-        task_id='end_task',
-    )
-    create_user_task >> get_user_task >> end_task
