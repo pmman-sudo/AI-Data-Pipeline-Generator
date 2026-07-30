@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
+from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
-from airflow.operators.python import PythonOperator
 import logging
 
 default_args = {
@@ -11,41 +11,47 @@ default_args = {
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 3,
-    'retry_delay': timedelta(minutes=5),
+    'retry_delay': timedelta(minutes=5)
 }
 
-def load_fct_users_created(**kwargs):
-    """
-    Loads data into the fct_users_created table.
-    
-    :param kwargs: Airflow keyword arguments
-    :return: None
-    """
+def create_fct_users_created(**kwargs):
     try:
-        # Load the data from the logging_events table into fct_users_created
-        logging.info('Loading data into fct_users_created table')
-        # Implement the data loading logic here
-        logging.info('Data loaded successfully')
+        logging.info('Creating fct_users_created table')
+        # Simulate creation of fct_users_created table
+        logging.info('fct_users_created table created successfully')
     except Exception as e:
-        logging.error(f'Error loading data: {e}')
+        logging.error('Error creating fct_users_created table: %s', e)
+        raise
+
+def load_fct_users_created(**kwargs):
+    try:
+        logging.info('Loading data into fct_users_created table')
+        # Simulate loading data into fct_users_created table
+        logging.info('Data loaded into fct_users_created table successfully')
+    except Exception as e:
+        logging.error('Error loading data into fct_users_created table: %s', e)
         raise
 
 with DAG(
     'fct_users_created_dag',
     default_args=default_args,
-    description='A DAG to load data into the fct_users_created table',
+    description='A DAG to create and load fct_users_created table',
     schedule_interval=timedelta(days=1),
-    start_date=days_ago(1),
-    tags=[],
+    start_date=days_ago(1)
 ) as dag:
-    load_fct_users_created_task = PythonOperator(
-        task_id='load_fct_users_created',
-        python_callable=load_fct_users_created,
+    create_table_task = PythonOperator(
+        task_id='create_table',
+        python_callable=create_fct_users_created
+    )
+
+    load_data_task = PythonOperator(
+        task_id='load_data',
+        python_callable=load_fct_users_created
     )
 
     end_task = BashOperator(
         task_id='end_task',
-        bash_command='echo "DAG finished execution"',
+        bash_command='echo "DAG completed Successfully"'
     )
 
-    load_fct_users_created_task >> end_task
+    create_table_task >> load_data_task >> end_task

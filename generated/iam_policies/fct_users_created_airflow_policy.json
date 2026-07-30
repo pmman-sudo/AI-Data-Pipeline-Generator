@@ -2,32 +2,28 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "AllowFctUsersCreatedAccess",
+            "Sid": "AllowCreateTable",
             "Effect": "Allow",
-            "Action": [
-                "s3:GetObject",
-                "s3:PutObject",
-                "s3:DeleteObject"
-            ],
-            "Resource": "arn:aws:s3:::your-bucket-name/fct_users_created/*"
+            "Action": "hive:CreateTable",
+            "Resource": "arn:aws:hive:REGION:ACCOUNT_ID:table/PROD/fct_users_created"
         },
         {
-            "Sid": "AllowLoggingEventsAccess",
+            "Sid": "AllowLoadData",
             "Effect": "Allow",
-            "Action": [
-                "s3:GetObject"
-            ],
-            "Resource": "arn:aws:s3:::your-bucket-name/logging_events/*"
+            "Action": "hive:LoadData",
+            "Resource": "arn:aws:hive:REGION:ACCOUNT_ID:table/PROD/fct_users_created"
         },
         {
-            "Sid": "AllowAirflowExecutionRole",
+            "Sid": "AllowGetTable",
             "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": "arn:aws:logs:*:*:*"
+            "Action": "hive:GetTable",
+            "Resource": "arn:aws:hive:REGION:ACCOUNT_ID:table/PROD/fct_users_created"
+        },
+        {
+            "Sid": "AllowListTables",
+            "Effect": "Allow",
+            "Action": "hive:ListTables",
+            "Resource": "arn:aws:hive:REGION:ACCOUNT_ID:database/PROD"
         }
     ]
 }
