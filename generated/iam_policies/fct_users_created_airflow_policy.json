@@ -2,15 +2,25 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "AllowHiveQuery",
+            "Sid": "AllowFctUsersCreatedAccess",
             "Effect": "Allow",
             "Action": [
-                "hive:ExecuteQuery"
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
             ],
-            "Resource": "*"
+            "Resource": "arn:aws:s3:::your-bucket-name/fct_users_created/*"
         },
         {
-            "Sid": "AllowLogging",
+            "Sid": "AllowLoggingEventsAccess",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Resource": "arn:aws:s3:::your-bucket-name/logging_events/*"
+        },
+        {
+            "Sid": "AllowAirflowExecutionRole",
             "Effect": "Allow",
             "Action": [
                 "logs:CreateLogGroup",
