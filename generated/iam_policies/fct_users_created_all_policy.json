@@ -1,0 +1,28 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowFctUsersCreatedAccess",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::your-bucket-name/logging_events",
+                "arn:aws:s3:::your-bucket-name/fct_users_created"
+            ]
+        },
+        {
+            "Sid": "AllowAirflowExecution",
+            "Effect": "Allow",
+            "Action": [
+                "airflow:PublishMetrics",
+                "airflow:CreateTaskInstance",
+                "airflow:UpdateTaskInstance"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
