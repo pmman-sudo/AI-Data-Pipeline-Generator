@@ -1,0 +1,71 @@
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.bash_operator import BashOperator
+from airflow.operators.python_operator import PythonOperator
+from airflow.utils.dates import days_ago
+from airflow.models import Variable
+import json
+import logging
+
+default_args = {
+    'owner': 'urn:li:corpuser:jdoe, urn:li:corpuser:datahub',
+    'depends_on_past': False,
+    'start_date': days_ago(1),
+    'retries': 3,
+    'retry_delay': timedelta(minutes=5),
+    'retry_exponential_backoff': True
+}
+
+def extract_data(**kwargs):
+    logging.info('Extracting data from logging_events')
+    # Extract data from logging_events
+    data = {'user_id': ['id1', 'id2', 'id3'], 'user_name': [True, False, True]}
+    return data
+
+def transform_data(**kwargs):
+    logging.info('Transforming data')
+    task_instance = kwargs['task_instance']
+    data = task_instance.xcom_pull(task_ids='extract_data')
+    transformed_data = []
+    for i in range(len(data['user_id'])):
+        transformed_data.append({'user_id': data['user_id'][i], 'user_name': data['user_name'][i]})
+    return transformed_data
+
+def load_data(**kwargs):
+    logging.info('Loading data into fct_users_created')
+    task_instance = kwargs['task_instance']
+    data = task_instance.xcom_pull(task_ids='transform_data')
+    # Load data into fct_users_created
+    logging.info('Data loaded successfully')
+
+dag = DAG(
+    'fct_users_created_dag',
+    default_args=default_args,
+    schedule_interval=timedelta(days=1)
+)
+
+extract_data_task = PythonOperator(
+    task_id='extract_data',
+    python_callable=extract_data,
+    dag=dag
+)
+
+transform_data_task = PythonOperator(
+    task_id='transform_data',
+    python_callable=transform_data,
+    dag=dag
+)
+
+load_data_task = PythonOperator(
+    task_id='load_data',
+    python_callable=load_data,
+    dag=dag
+)
+
+end_task = BashOperator(
+    task_id='end_task',
+    bash_command='echo "DAG completed successfully"',
+    dag=dag
+)
+
+extract_data_task >> transform_data_task >> load_data_task >> end_task
