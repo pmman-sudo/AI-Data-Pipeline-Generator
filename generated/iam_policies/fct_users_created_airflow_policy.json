@@ -1,27 +1,21 @@
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:ListBucket",
-        "s3:PutObject"
-      ],
-      "Resource": [
-        "arn:aws:s3:::your-bucket-name",
-        "arn:aws:s3:::your-bucket-name/*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "hive:GetTable",
-        "hive:Select"
-      ],
-      "Resource": [
-        "arn:aws:hive::your-account-id:table/logging_events"
-      ]
-    }
-  ]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowFctUsersCreatedRead",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Resource": "arn:aws:s3:::logging-events-prod/*"
+        },
+        {
+            "Sid": "AllowFctUsersCreatedWrite",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject"
+            ],
+            "Resource": "arn:aws:s3:::fct-users-created-prod/*"
+        }
+    ]
 }
