@@ -2,20 +2,31 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "AllowFctUsersCreatedRead",
+            "Sid": "AllowFctUsersCreatedTableAccess",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": "arn:aws:s3:::my-bucket/fct_users_created/*"
+        },
+        {
+            "Sid": "AllowLoggingEventsDatasetAccess",
             "Effect": "Allow",
             "Action": [
                 "s3:GetObject"
             ],
-            "Resource": "arn:aws:s3:::logging-events-prod/*"
+            "Resource": "arn:aws:s3:::my-bucket/logging_events/*"
         },
         {
-            "Sid": "AllowFctUsersCreatedWrite",
+            "Sid": "AllowAirflowExecutionRole",
             "Effect": "Allow",
             "Action": [
-                "s3:PutObject"
+                "airflow:RunTask",
+                "airflow:StopTask"
             ],
-            "Resource": "arn:aws:s3:::fct-users-created-prod/*"
+            "Resource": "*"
         }
     ]
 }

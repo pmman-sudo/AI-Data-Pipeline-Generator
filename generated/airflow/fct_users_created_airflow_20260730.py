@@ -1,64 +1,70 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.providers.amazon.aws.operators.emr import EmrAddStepsOperator
-from airflow.providers.amazon.aws.sensors.emr import EmrStepSensor
+from airflow.operators.bash_operator import BashOperator
+from airflow.operators.python_operator import PythonOperator
 import logging
 
 default_args = {
-    'owner': 'urn:li:corpuser:jdoe, urn:li:corpuser:datahub',
+    'owner': 'jdoe, datahub',
     'depends_on_past': False,
-    'email_on_failure': False,
-    'email_on_retry': False,
+    'start_date': datetime(2023, 12, 1),
     'retries': 3,
     'retry_delay': timedelta(minutes=5),
+    'retry_exponential_backoff': True,
 }
 
-def create_fct_users_created(**kwargs):
-    """
-    Creates fct_users_created table by querying logging_events table.
-    """
-    try:
-        # Initialize Spark session
-        from pyspark.sql import SparkSession
-        spark = SparkSession.builder.getOrCreate()
-
-        # Read logging_events table
-        logging_events_df = spark.read.format('parquet').load('s3://logging-events-prod')
-
-        # Create fct_users_created table
-        fct_users_created_df = logging_events_df.select(
-            logging_events_df.user_id.cast('string').alias('user_id'),
-            logging_events_df.user_name.cast('boolean').alias('user_name')
-        ).dropDuplicates()
-
-        # Write fct_users_created table to S3
-        fct_users_created_df.write.format('parquet').mode('overwrite').save('s3://fct-users-created-prod')
-
-        spark.stop()
-
-        logging.info('fct_users_created table created successfully')
-
-    except Exception as e:
-        logging.error(f'Error creating fct_users_created table: {e}')
-        raise
-
-with DAG(
+dag = DAG(
     'fct_users_created_dag',
     default_args=default_args,
-    description='Creates fct_users_created table',
     schedule_interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1),
-    tags=[],
-) as dag:
-    create_fct_users_created_task = PythonOperator(
-        task_id='create_fct_users_created',
-        python_callable=create_fct_users_created,
-    )
+)
 
-    end_task = DummyOperator(
-        task_id='end_task',
-        trigger_rule='all_done',
-    )
+def extract_data(**kwargs):
+    """
+    Extract data from logging_events dataset
+    """
+    logging.info('Extracting data from logging_events dataset')
+    # Implement data extraction logic here
+    return True
 
-    create_fct_users_created_task >> end_task
+def transform_data(**kwargs):
+    """
+    Transform extracted data into fct_users_created table format
+    """
+    logging.info('Transforming data into fct_users_created table format')
+    # Implement data transformation logic here
+    return True
+
+def load_data(**kwargs):
+    """
+    Load transformed data into fct_users_created table
+    """
+    logging.info('Loading data into fct_users_created table')
+    # Implement data loading logic here
+    return True
+
+extract_task = PythonOperator(
+    task_id='extract_data',
+    python_callable=extract_data,
+    dag=dag
+)
+
+transform_task = PythonOperator(
+    task_id='transform_data',
+    python_callable=transform_data,
+    dag=dag
+)
+
+load_task = PythonOperator(
+    task_id='load_data',
+    python_callable=load_data,
+    dag=dag
+)
+
+end_task = BashOperator(
+    task_id='end_task',
+    bash_command='echo "Data loaded into fct_users_created table"',
+    dag=dag
+)
+
+extract_task >> transform_task >> load_task >> end_task
