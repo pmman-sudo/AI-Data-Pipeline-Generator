@@ -26,26 +26,50 @@ class TableMetadata:
 
 class MetadataService:
     def __init__(self):
-        self.graph = None
+        gms = os.getenv("DATAHUB_GMS")
 
-        try:
-            self.graph = DataHubGraph(
-                DatahubClientConfig(
-                    server=os.getenv(
-                        "DATAHUB_GMS",
-                        "http://localhost:8080"
-                    )
+        if gms:
+            try:
+                self.graph = DataHubGraph(
+                    DatahubClientConfig(server=gms)
                 )
-            )
-        except Exception as e:
-            print(f"DataHub unavailable: {e}")
+            except Exception as e:
+                print(f"DataHub unavailable: {e}")
+                self.graph = None
+        else:
+            self.graph = None
 
         self.platform = "hive"
         self.env = "PROD"
 
     def get_table_context(self, table_name: str) -> TableMetadata:
         """Fetches metadata from DataHub and maps it to the TableMetadata dataclass."""
-        
+
+        if self.graph is None:
+            return TableMetadata(
+                name=table_name,
+                columns=[
+                    {
+                        "name": "user_id",
+                        "type": "BIGINT",
+                        "description": "Primary key"
+                    },
+                    {
+                        "name": "created_at",
+                        "type": "TIMESTAMP",
+                        "description": "Record creation timestamp"
+                    },
+                    {
+                        "name": "email",
+                        "type": "STRING",
+                        "description": "User email address"
+                    }
+                ],
+                owners=["Demo"],
+                tags=["Demo"],
+                lineage=[]
+            )
+
         # Construct the URN string format that DataHub expects
         urn = f"urn:li:dataset:(urn:li:dataPlatform:{self.platform},{table_name},{self.env})"
         
@@ -101,7 +125,9 @@ class MetadataService:
             # Re-raise the 404 so it isn't caught by the broad exception below
             raise
 
-        except Exception:
+        except Exception as e:
+            print(f"Metadata fetch failed: {e}")
+
             # Fallback metadata when DataHub is unavailable
             return TableMetadata(
                 name=table_name,
