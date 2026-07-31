@@ -8,28 +8,30 @@ from pathlib import Path
 
 API_URL = "https://ai-data-pipeline-generator.onrender.com"
 
+st.write("Backend:", API_URL)
+
 # ==========================================
 # Helper Functions
 # ==========================================
 
 def get_table_metadata(table_name: str):
-    """
-    Fetch metadata for a table from FastAPI.
-    """
     try:
         response = requests.get(
             f"{API_URL}/schema/{table_name}",
             timeout=10
         )
 
+        st.write("Status:", response.status_code)
+        st.write("Response:", response.text)
+
         if response.status_code == 200:
             return response.json()
 
         return None
 
-    except Exception:
+    except Exception as e:
+        st.error(f"Exception: {e}")
         return None
-
 
 # ==========================================
 # Streamlit Configuration
