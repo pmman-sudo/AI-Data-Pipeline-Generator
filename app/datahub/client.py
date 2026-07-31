@@ -26,16 +26,20 @@ class TableMetadata:
 
 class MetadataService:
     def __init__(self):
-        self.graph = DataHubGraph(
-            DatahubClientConfig(
-                server=os.getenv(
-                    "DATAHUB_GMS",
-                    "http://localhost:8080"
+        self.graph = None
+
+        try:
+            self.graph = DataHubGraph(
+                DatahubClientConfig(
+                    server=os.getenv(
+                        "DATAHUB_GMS",
+                        "http://localhost:8080"
+                    )
                 )
             )
-        )
+        except Exception as e:
+            print(f"DataHub unavailable: {e}")
 
-        # Platform and environment
         self.platform = "hive"
         self.env = "PROD"
 

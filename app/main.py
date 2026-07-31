@@ -84,7 +84,10 @@ def health_check():
 
 @app.get("/schema/{table}")
 def get_schema(table: str):
+    print(f"Received metadata request for {table}")
+
     metadata_service = MetadataService()
+
     return metadata_service.get_table_context(table)
 
 @app.get("/download")

@@ -14,24 +14,35 @@ st.write("Backend:", API_URL)
 # Helper Functions
 # ==========================================
 
-def get_table_metadata(table_name: str):
+def get_table_metadata(table_name):
+    url = f"{API_URL}/schema/{table_name}"
+
+    st.write("Backend URL:", API_URL)
+    st.write("Request URL:", url)
+
     try:
-        response = requests.get(
-            f"{API_URL}/schema/{table_name}",
-            timeout=10
-        )
+        response = requests.get(url, timeout=(10, 60))
 
-        st.write("Status:", response.status_code)
-        st.write("Response:", response.text)
+        st.write("Status Code:", response.status_code)
+        st.code(response.text)
 
-        if response.status_code == 200:
-            return response.json()
+        response.raise_for_status()
 
-        return None
+        return response.json()
+
+    except requests.exceptions.HTTPError as e:
+        st.error(f"HTTP Error: {e}")
+
+    except requests.exceptions.ConnectionError:
+        st.error("Could not connect to FastAPI backend.")
+
+    except requests.exceptions.Timeout:
+        st.error("Request timed out.")
 
     except Exception as e:
-        st.error(f"Exception: {e}")
-        return None
+        st.error(f"Unexpected error: {e}")
+
+    return None
 
 # ==========================================
 # Streamlit Configuration
