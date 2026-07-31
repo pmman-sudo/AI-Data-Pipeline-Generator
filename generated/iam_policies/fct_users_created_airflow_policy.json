@@ -1,23 +1,23 @@
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "AllowFctUsersCreatedDAG",
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:ListBucket",
-        "athena:StartQueryExecution",
-        "athena:GetQueryExecution",
-        "athena:GetQueryResults",
-        "athena:StopQueryExecution",
-        "athena:CancelQueryExecution"
-      ],
-      "Resource": [
-        "arn:aws:s3:::your-bucket-name",
-        "arn:aws:athena:*:*"
-      ]
-    }
-  ]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowHiveQuery",
+            "Effect": "Allow",
+            "Action": [
+                "hive:Query"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "AllowLogging",
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": "arn:aws:logs:*:*:*"
+        }
+    ]
 }
