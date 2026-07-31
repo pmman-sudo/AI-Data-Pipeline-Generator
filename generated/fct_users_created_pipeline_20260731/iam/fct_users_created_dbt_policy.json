@@ -2,29 +2,27 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "DbtModelExecutionPermission",
+      "Sid": "AllowDbtModelExecution",
       "Effect": "Allow",
       "Action": [
         "s3:GetObject",
         "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::your-bucket-name",
-        "arn:aws:s3:::your-bucket-name/*"
+        "arn:aws:s3:::your-bucket-name/*",
+        "arn:aws:s3:::your-bucket-name"
       ]
     },
     {
-      "Sid": "DbtModelExecutionPermissionGlue",
+      "Sid": "AllowDbtModelMetadataAccess",
       "Effect": "Allow",
       "Action": [
-        "glue:GetDatabase",
         "glue:GetTable",
-        "glue:GetTableVersions",
-        "glue:GetPartitions"
+        "glue:GetTables",
+        "glue:SearchTables"
       ],
       "Resource": [
-        "arn:aws:glue:region:account-id:database/database-name",
-        "arn:aws:glue:region:account-id:table/database-name/table-name"
+        "arn:aws:glue:region:account-id:table/your-database-name/your-table-name"
       ]
     }
   ]

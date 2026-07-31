@@ -1,29 +1,16 @@
 ---
-# YAML configuration for fct_users_created table
-
-# Source information
 source:
-  name: "logging_events"
-  database: "hive"
-  platform: "PROD"
-
-# Database information
-database:
-  name: "fct_users_created"
-
-# Table information
-table:
-  name: "fct_users_created"
-  owner: ["urn:li:corpuser:jdoe", "urn:li:corpuser:datahub"]
-  tags: []
-
-# Columns information
+  urn: li:dataPlatform:hive
+database: logging_events
+table: fct_users_created
+owners:
+  - urn:li:corpuser:jdoe
+  - urn:li:corpuser:datahub
+tags: []
 columns:
-  - name: "user_id"
-    type: "varchar(100)"
-  - name: "user_name"
-    type: "boolean"
-
-# Upstream lineage
+  - name: user_id
+    type: varchar(100)
+  - name: user_name
+    type: boolean
 upstream_lineage:
-  - "urn:li:dataset:(urn:li:dataPlatform:hive,logging_events,PROD)"
+  - urn:li:dataset:(urn:li:dataPlatform:hive,logging_events,PROD)

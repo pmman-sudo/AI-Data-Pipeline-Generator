@@ -1,10 +1,8 @@
 SELECT 
-    ue.user_id,
-    CASE 
-        WHEN ue.user_name IS NOT NULL THEN TRUE 
-        ELSE FALSE 
-    END AS user_name
+    user_id,
+    user_name
 FROM 
-    logging_events ue
+    logging_events
 WHERE 
-    ue.user_id IS NOT NULL
+    user_id IS NOT NULL
+    AND user_name IS NOT NULL;

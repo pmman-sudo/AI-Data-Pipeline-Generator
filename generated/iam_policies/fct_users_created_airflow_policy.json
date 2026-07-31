@@ -5,20 +5,26 @@
             "Sid": "AllowHiveQuery",
             "Effect": "Allow",
             "Action": [
-                "hive:CreateTable",
-                "hive:InsertData"
+                "hive:GetTable",
+                "hive:GetPartition"
             ],
-            "Resource": "arn:aws:hive:region:account-id:database/default/table/fct_users_created"
+            "Resource": "arn:aws:hive:region:account-id:table/logging_events"
         },
         {
-            "Sid": "AllowLogging",
+            "Sid": "AllowHiveInsert",
             "Effect": "Allow",
             "Action": [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
+                "hive:Insert"
             ],
-            "Resource": "arn:aws:logs:region:account-id:log-group/airflow-logs"
+            "Resource": "arn:aws:hive:region:account-id:table/fct_users_created"
+        },
+        {
+            "Sid": "AllowAirflowExecution",
+            "Effect": "Allow",
+            "Action": [
+                "airflow:ExecuteTask"
+            ],
+            "Resource": "*"
         }
     ]
 }
