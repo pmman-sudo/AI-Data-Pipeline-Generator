@@ -2,86 +2,94 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.transfers.hive import HiveOperator
-from airflow.utils.db import provide_session
-from airflow.utils.log import LoggingMixin
-from airflow.models import Variable
+from airflow.utils.dates import days_ago
+import logging
 
 default_args = {
-    'owner': 'jdoe',
+    'owner': 'airflow',
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 3,
     'retry_delay': timedelta(minutes=5),
-    'retry_exponential_backoff': True
 }
 
 def create_fct_users_created(**kwargs):
     """
-    Create the fct_users_created table.
+    Create fct_users_created table.
     
-    :param kwargs: Airflow context
+    :param kwargs: Keyword arguments
     :return: None
     """
-    hive Conn = HiveOperator(
-        task_id='create_fct_users_created',
-        hive_cli_conn_id='hive_default',
-        sql=f"""
+    try:
+        # Define the Hive query to create the table
+        hive_query = """
             CREATE TABLE IF NOT EXISTS fct_users_created (
-                user_id varchar(100),
-                user_name boolean
+                user_id VARCHAR(100),
+                user_name BOOLEAN
             );
         """
-    )
-    return hive_conn.execute(f"""
-            CREATE TABLE IF NOT EXISTS fct_users_created (
-                user_id varchar(100),
-                user_name boolean
-            );
-        """)
+        
+        # execute the query
+        HiveOperator(
+            task_id='create_fct_users_created',
+            hive_cli_conn_id='hive_default',
+            hive_query=hive_query,
+            retry_args=default_args
+        ).execute(kwargs)
+        
+        logging.info("Table fct_users_created created successfully")
+        
+    except Exception as e:
+        logging.error(f"Error creating table fct_users_created: {str(e)}")
 
-def populate_fct_users_created(**kwargs):
+def load_fct_users_created(**kwargs):
     """
-    Populate the fct_users_created table.
+    Load data into fct_users_created table.
     
-    :param kwargs: Airflow context
+    :param kwargs: Keyword arguments
     :return: None
     """
-    hive_conn = HiveOperator(
-        task_id='populate_fct_users_created',
-        hive_cli_conn_id='hive_default',
-        sql=f"""
+    try:
+        # Define the Hive query to load data into the table
+        hive_query = """
             INSERT INTO fct_users_created
             SELECT 
                 user_id,
                 user_name
             FROM logging_events;
         """
-    )
-    return hive_conn.execute(f"""
-            INSERT INTO fct_users_created
-            SELECT 
-                user_id,
-                user_name
-            FROM logging_events;
-        """)
+        
+        # execute the query
+        HiveOperator(
+            task_id='load_fct_users_created',
+            hive_cli_conn_id='hive_default',
+            hive_query=hive_query,
+            retry_args=default_args
+        ).execute(kwargs)
+        
+        logging.info("Data loaded into fct_users_created successfully")
+        
+    except Exception as e:
+        logging.error(f"Error loading data into fct_users_created: {str(e)}")
 
 with DAG(
     'fct_users_created_dag',
     default_args=default_args,
-    description='A DAG to create and populate the fct_users_created table',
-    schedule_interval=timedelta(days=1),
-    start_date=datetime(2023, 12, 1),
+    description='A DAG to create and load fct_users_created table',
+    schedule_interval=None,
+    start_date=days_ago(1),
+    tags=['data_warehouse'],
     catchup=False,
-    tags=['fct_users_created']
 ) as dag:
-    create_table = PythonOperator(
+    create_table-task = PythonOperator(
         task_id='create_fct_users_created',
         python_callable=create_fct_users_created
     )
-    populate_table = PythonOperator(
-        task_id='populate_fct_users_created',
-        python_callable=populate_fct_users_created
+    
+    load_data_task = PythonOperator(
+        task_id='load_fct_users_created',
+        python_callable=load_fct_users_created
     )
     
-    create_table >> populate_table
+    create_table-task >> load_data_task

@@ -2,19 +2,23 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "AllowFctUsersCreatedDAG",
+            "Sid": "AllowHiveQuery",
             "Effect": "Allow",
             "Action": [
                 "hive:CreateTable",
-                "hive:InsertInto"
+                "hive:InsertData"
             ],
-            "Resource": "arn:aws:hive:region:account-id:table/fct_users_created"
+            "Resource": "arn:aws:hive:region:account-id:database/default/table/fct_users_created"
         },
         {
-            "Sid": "AllowLoggingEventsRead",
+            "Sid": "AllowLogging",
             "Effect": "Allow",
-            "Action": "hive:Select",
-            "Resource": "arn:aws:hive:region:account-id:table/logging_events"
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": "arn:aws:logs:region:account-id:log-group/airflow-logs"
         }
     ]
 }

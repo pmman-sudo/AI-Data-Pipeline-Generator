@@ -5,16 +5,18 @@
   )
 }}
 
-WITH users_created AS (
-  SELECT 
-    user_id,
-    user_name
-  FROM 
-    {{ ref('logging_events') }}
+WITH 
+-- Extracting table name from upstream lineage: urn:li:dataset:(urn:li:dataPlatform:hive,logging_events,PROD)
+logging_events AS (
+  SELECT * FROM {{ ref('logging_events') }}
 )
 
 SELECT 
-  user_id::varchar(100) AS user_id,
-  user_name::boolean AS user_name
+  -- Casting user_id to varchar(100) as per metadata
+  CAST(user_id AS VARCHAR(100)) AS user_id,
+  
+  -- Casting user_name to boolean as per metadata
+  CAST(user_name AS BOOLEAN) AS user_name
+
 FROM 
-  users_created
+  logging_events

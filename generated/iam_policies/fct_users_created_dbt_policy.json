@@ -2,7 +2,7 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "DbtModelExecution",
+      "Sid": "DbtModelExecutionPermission",
       "Effect": "Allow",
       "Action": [
         "s3:GetObject",
@@ -14,19 +14,18 @@
       ]
     },
     {
-      "Sid": "DbtModelReadFromLoggingEvents",
-      "Effect": "Allow",
-      "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::your-logging-events-bucket-name/*"
-    },
-    {
-      "Sid": "DbtModelWriteToFctUsersCreated",
+      "Sid": "DbtModelExecutionPermissionGlue",
       "Effect": "Allow",
       "Action": [
-        "s3:PutObject",
-        "s3:DeleteObject"
+        "glue:GetDatabase",
+        "glue:GetTable",
+        "glue:GetTableVersions",
+        "glue:GetPartitions"
       ],
-      "Resource": "arn:aws:s3:::your-fct-users-created-bucket-name/*"
+      "Resource": [
+        "arn:aws:glue:region:account-id:database/database-name",
+        "arn:aws:glue:region:account-id:table/database-name/table-name"
+      ]
     }
   ]
 }

@@ -1,23 +1,23 @@
-# fct_users_created README Documentation
+# README: fct_users_created
 ## Purpose
-The `fct_users_created` table is designed to store information about created users. This dataset is used to track user creation events.
+The fct_users_created dataset is designed to store information about users who have been created, including their unique identifiers and names.
 
 ## Columns
-The following columns are included in the `fct_users_created` table:
-* `user_id` (varchar(100)): Unique identifier for each user
-* `user_name` (boolean): Indicates whether a user name is available
+The fct_users_created dataset contains the following columns:
+- **user_id** (varchar(100)): Unique identifier for each user.
+- **user_name** (boolean): Indicates whether the user has a name associated with their account.
 
 ## Owners
-The `fct_users_created` dataset is owned by:
-* urn:li:corpuser:jdoe
-* urn:li:corpuser:datahub
+The fct_users_created dataset is owned by:
+- urn:li:corpuser:jdoe
+- urn:li:corpuser:datahub
 
 ## Tags
 There are no tags associated with this dataset.
 
 ## Lineage
-The `fct_users_created` dataset has the following upstream lineage:
-* urn:li:dataset:(urn:li:dataPlatform:hive,logging_events,PROD)
+The fct_users_created dataset is derived from the following upstream sources:
+- urn:li:dataset:(urn:li:dataPlatform:hive,logging_events,PROD)
 
 ## Example Usage
-To query the `fct_users_created` table and retrieve the count of users created, you can use the following SQL query:
+To query the fct_users_created dataset, you can use the following example:

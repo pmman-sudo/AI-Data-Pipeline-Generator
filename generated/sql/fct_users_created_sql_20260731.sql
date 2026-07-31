@@ -1,5 +1,10 @@
 SELECT 
-    user_id,
-    user_name
+    ue.user_id,
+    CASE 
+        WHEN ue.user_name IS NOT NULL THEN TRUE 
+        ELSE FALSE 
+    END AS user_name
 FROM 
-    fct_users_created
+    logging_events ue
+WHERE 
+    ue.user_id IS NOT NULL

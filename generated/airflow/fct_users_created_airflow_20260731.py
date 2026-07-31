@@ -1,111 +1,95 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.hooks.base import BaseHook
-from airflow.utils.db import provide_session
-from airflow.utils.log.logging_mixin import LoggingMixin
-from airflow.exceptions import AirflowException
-import json
+from airflow.providers.amazon.aws.transfers.hive import HiveOperator
+from airflow.utils.dates import days_ago
 import logging
 
 default_args = {
-    'owner': 'urn:li:corpuser:jdoe, urn:li:corpuser:datahub',
+    'owner': 'airflow',
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 3,
     'retry_delay': timedelta(minutes=5),
-    'retry_exponential_backoff': True,
 }
 
-def fetch_data(**kwargs):
+def create_fct_users_created(**kwargs):
     """
-    Fetch data from the upstream dataset.
+    Create fct_users_created table.
     
-    :param kwargs: Airflow context
+    :param kwargs: Keyword arguments
     :return: None
     """
     try:
-        # Initialize logging
-        logger = LoggingMixin().log
-        logger.info('Fetching data from upstream dataset')
+        # Define the Hive query to create the table
+        hive_query = """
+            CREATE TABLE IF NOT EXISTS fct_users_created (
+                user_id VARCHAR(100),
+                user_name BOOLEAN
+            );
+        """
         
-        # Fetch data from Hive
-        hive_conn = BaseHook.get_connection('hive_default')
-        cursor = hive_conn.get_cursor()
-        cursor.execute('SELECT * FROM logging_events')
-        data = cursor.fetchall()
+        # execute the query
+        HiveOperator(
+            task_id='create_fct_users_created',
+            hive_cli_conn_id='hive_default',
+            hive_query=hive_query,
+            retry_args=default_args
+        ).execute(kwargs)
         
-        # Process data
-        processed_data = []
-        for row in data:
-            user_id = row[0]
-            user_name = bool(row[1])  # Convert to boolean
-            processed_data.append((user_id, user_name))
+        logging.info("Table fct_users_created created successfully")
         
-        # Log the number of records fetched
-        logger.info(f'Fetched {len(data)} records')
-        
-        # Store the processed data in XCom
-        kwargs['ti'].xcom_push(key='processed_data', value=processed_data)
-    
-    except AirflowException as e:
-        logger.error(f'Error fetching data: {e}')
-        raise
+    except Exception as e:
+        logging.error(f"Error creating table fct_users_created: {str(e)}")
 
-def load_data(**kwargs):
+def load_fct_users_created(**kwargs):
     """
-    Load the processed data into the fct_users_created table.
+    Load data into fct_users_created table.
     
-    :param kwargs: Airflow context
+    :param kwargs: Keyword arguments
     :return: None
     """
     try:
-        # Initialize logging
-        logger = LoggingMixin().log
-        logger.info('Loading data into fct_users_created table')
+        # Define the Hive query to load data into the table
+        hive_query = """
+            INSERT INTO fct_users_created
+            SELECT 
+                user_id,
+                user_name
+            FROM logging_events;
+        """
         
-        # Get the processed data from XCom
-        processed_data = kwargs['ti'].xcom_pull(key='processed_data', task_ids='fetch_data')
+        # execute the query
+        HiveOperator(
+            task_id='load_fct_users_created',
+            hive_cli_conn_id='hive_default',
+            hive_query=hive_query,
+            retry_args=default_args
+        ).execute(kwargs)
         
-        # Load data into the table
-        hive_conn = BaseHook.get_connection('hive_default')
-        cursor = hive_conn.get_cursor()
-        cursor.execute('CREATE TABLE IF NOT EXISTS fct_users_created (user_id varchar(100), user_name boolean)')
-        cursor.executemany('INSERT INTO fct_users_created VALUES (%s, %s)', processed_data)
+        logging.info("Data loaded into fct_users_created successfully")
         
-        # Log the number of records loaded
-        logger.info(f'Loaded {len(processed_data)} records')
-    
-    except AirflowException as e:
-        logger.error(f'Error loading data: {e}')
-        raise
+    except Exception as e:
+        logging.error(f"Error loading data into fct_users_created: {str(e)}")
 
-dag = DAG(
+with DAG(
     'fct_users_created_dag',
     default_args=default_args,
-    description='A DAG to create the fct_users_created table',
-    schedule_interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1),
+    description='A DAG to create and load fct_users_created table',
+    schedule_interval=None,
+    start_date=days_ago(1),
+    tags=['data_warehouse'],
     catchup=False,
-)
-
-fetch_data_task = PythonOperator(
-    task_id='fetch_data',
-    python_callable=fetch_data,
-    dag=dag,
-)
-
-load_data_task = PythonOperator(
-    task_id='load_data',
-    python_callable=load_data,
-    dag=dag,
-)
-
-end_task = DummyOperator(
-    task_id='end_task',
-    trigger_rule='all_done',
-    dag=dag,
-)
-
-fetch_data_task >> load_data_task >> end_task
+) as dag:
+    create_table-task = PythonOperator(
+        task_id='create_fct_users_created',
+        python_callable=create_fct_users_created
+    )
+    
+    load_data_task = PythonOperator(
+        task_id='load_fct_users_created',
+        python_callable=load_fct_users_created
+    )
+    
+    create_table-task >> load_data_task
