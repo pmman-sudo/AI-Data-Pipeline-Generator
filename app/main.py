@@ -9,6 +9,7 @@ from app.datahub.client import MetadataService
 from app.datahub.writeback import write_generation_metadata
 from app.utils.package_generator import create_pipeline_package
 import shutil
+import time
 from app.github.service import commit_and_push
 from app.llm.provider import generate
 from app.security.validator import (
@@ -189,11 +190,15 @@ def generate_pipeline(req: GenerateRequest):
         # Load DataHub Metadata
         # --------------------------------------------------
 
+        start = time.time()
+
         metadata_service = MetadataService()
         try:
             metadata = metadata_service.get_table_context(table_name)
         except Exception:
             metadata = MetadataService().get_table_context("fct_users_created")
+
+        print(f"Metadata lookup: {time.time() - start:.2f}s")
         
         # --------------------------------------------------
         # Format Metadata
@@ -436,11 +441,17 @@ RULES
 
         else:
 
+            start = time.time()
+
             raw_response = generate(prompt)
+
+            print(f"LLM generation: {time.time() - start:.2f}s")
 
             generated_code, iam_json = extract_code_blocks(
                 raw_response
             )
+
+            start = time.time()
 
             result = save_and_validate(
                 table_name=table_name,
@@ -448,10 +459,14 @@ RULES
                 iam_json=iam_json,
                 artifact_type=artifact_type,
             )
+
+            print(f"Validation: {time.time() - start:.2f}s")
              
         # --------------------------------------------------
         # Commit to GitHub
         # --------------------------------------------------
+        
+        start = time.time()
 
         try:
             commit_hash = commit_and_push(req.task)
@@ -459,9 +474,12 @@ RULES
             print(f"GitHub commit skipped: {e}")
             commit_hash = "Not committed"
 
+        print(f"GitHub: {time.time() - start:.2f}s") 
+
         # --------------------------------------------------
         # Write Metadata Back to DataHub
         # --------------------------------------------------
+        start = time.time()
 
         try:
             write_generation_metadata(
@@ -472,6 +490,8 @@ RULES
             )
         except Exception as e:
             print(f"DataHub writeback skipped: {e}")
+
+        print(f"Writeback: {time.time() - start:.2f}s")
         
         # --------------------------------------------------
         # Return Response
