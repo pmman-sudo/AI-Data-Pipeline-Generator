@@ -466,6 +466,8 @@ RULES
         # Commit to GitHub
         # --------------------------------------------------
         
+
+
         start = time.time()
 
         try:
@@ -479,9 +481,14 @@ RULES
         # --------------------------------------------------
         # Write Metadata Back to DataHub
         # --------------------------------------------------
+        
+        
+        
         start = time.time()
 
         DATAHUB_GMS = os.getenv("DATAHUB_GMS")
+        
+        print(f"DATAHUB_GMS={DATAHUB_GMS!r}")
 
         if DATAHUB_GMS:
             try:
