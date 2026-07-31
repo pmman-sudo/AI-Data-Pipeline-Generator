@@ -1,0 +1,15 @@
+# fct_users_created YAML Configuration
+name: fct_users_created
+source:
+  urn: li:dataset: (urn:li:dataPlatform:hive,logging_events,PROD)
+database: default
+table: fct_users_created
+owners:
+  - urn:li:corpuser:jdoe
+  - urn:li:corpuser:datahub
+tags: []
+columns:
+  - name: user_id
+    type: varchar(100)
+  - name: user_name
+    type: boolean

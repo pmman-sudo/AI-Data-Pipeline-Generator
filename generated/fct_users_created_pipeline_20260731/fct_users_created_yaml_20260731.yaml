@@ -1,0 +1,86 @@
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.providers.apache.hive.operators.hive import HiveOperator
+from airflow.utils.dates import days_ago
+import pandas as pd
+import yaml
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'email_on_failure': False,
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+with open('config.yaml') as f:
+    config = yaml.safe_load(f)
+
+dag = DAG(
+    'fct_users_created_dag',
+    default_args=default_args,
+    description='A DAG to create fct_users_created table',
+    schedule_interval=timedelta(days=1),
+    start_date=days_ago(1),
+)
+
+def generate_fct_users_created(**kwargs):
+    # Read data from upstream source
+    hive_conn = HiveOperator(
+        task_id='read_upstream_data',
+        hive_cli_conn_id='hive_default',
+        hql='SELECT * FROM logging_events',
+        dag=dag,
+    )
+    
+    # Transform data
+    df = pd.read_csv(hive_conn.output)
+    df['user_name'] = df['user_name'].apply(lambda x: True if x else False)
+    df = df[['user_id', 'user_name']]
+
+    # Load data into fct_users_created table
+    hive_create_table = HiveOperator(
+        task_id='create_table',
+        hive_cli_conn_id='hive_default',
+        hql='''
+            CREATE EXTERNAL TABLE IF NOT EXISTS fct_users_created (
+                user_id VARCHAR(100),
+                user_name BOOLEAN
+            )
+            ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+            LOCATION 's3://my-bucket/fct_users_created/'
+        ''',
+        dag=dag,
+    )
+
+    hive_load_data = HiveOperator(
+        task_id='load_data',
+        hive_cli_conn_id='hive_default',
+        hql=f'''
+            INSERT INTO fct_users_created
+            SELECT user_id, user_name
+            FROM ({df.to_csv(index=False)})
+        ''',
+        dag=dag,
+    )
+
+    # Set ownership and tags
+    owners = ['urn:li:corpuser:jdoe', 'urn:li:corpuser:datahub']
+    tags = []
+
+    # Define task dependencies
+    end_task = DummyOperator(
+        task_id='end_task',
+        trigger_rule='all_done',
+        dag=dag,
+    )
+
+    hive_create_table >> hive_load_data >> end_task
+
+# Generate YAML configuration
+with open('config.yaml', 'w') as f:
+    yaml.dump({
+        'owners': owners,
+        'tags': tags,
+    }, f)
