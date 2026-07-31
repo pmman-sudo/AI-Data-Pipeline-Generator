@@ -1,20 +1,23 @@
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "AllowFctUsersCreatedDAG",
-            "Effect": "Allow",
-            "Action": [
-                "hive:CreateTable",
-                "hive:InsertInto"
-            ],
-            "Resource": "arn:aws:hive:region:account-id:table/fct_users_created"
-        },
-        {
-            "Sid": "AllowLoggingEventsRead",
-            "Effect": "Allow",
-            "Action": "hive:Select",
-            "Resource": "arn:aws:hive:region:account-id:table/logging_events"
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowFctUsersCreatedDAG",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:ListBucket",
+        "athena:StartQueryExecution",
+        "athena:GetQueryExecution",
+        "athena:GetQueryResults",
+        "athena:StopQueryExecution",
+        "athena:CancelQueryExecution"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-bucket-name",
+        "arn:aws:athena:*:*"
+      ]
+    }
+  ]
 }
