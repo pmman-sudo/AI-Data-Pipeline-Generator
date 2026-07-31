@@ -436,7 +436,11 @@ RULES
         # Commit to GitHub
         # --------------------------------------------------
 
-        commit_hash = commit_and_push(req.task)
+        try:
+            commit_hash = commit_and_push(req.task)
+        except Exception as e:
+            print(f"GitHub commit skipped: {e}")
+            commit_hash = "Not committed"
 
         # --------------------------------------------------
         # Write Metadata Back to DataHub
