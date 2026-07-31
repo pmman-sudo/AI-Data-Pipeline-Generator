@@ -1,30 +1,25 @@
 import os
-from git import Repo
+from git import Repo, InvalidGitRepositoryError
 
 def commit_and_push(task_description: str) -> str:
-    """Stages generated files, commits, and pushes to GitHub."""
-    
-    # Ensure token exists in environment
-    token = os.getenv("GITHUB_TOKEN")
-    if not token:
-        raise ValueError("GITHUB_TOKEN is missing from .env")
-        
-    repo = Repo(".")
-    
-    # Stage all files in the generated/ directory
-    repo.git.add("generated/")
-    
-    # Check if there are actually changes to commit
-    if repo.is_dirty(untracked_files=True):
-        # Commit with a descriptive message
-        commit_message = f"Generate artifact via AI - task: {task_description}"
-        commit = repo.index.commit(commit_message)
-        
-        # Push to the current branch (assumes local git is authenticated)
-        origin = repo.remote(name="origin")
-        origin.push()
-        
-        # Return the short commit hash
-        return commit.hexsha[:7]
-        
-    return "pending"
+    try:
+        repo = Repo(".")
+
+        repo.git.add("generated/")
+
+        if not repo.is_dirty(untracked_files=True):
+            return "No changes"
+
+        commit = repo.index.commit(
+            f"Generate artifact via AI - task: {task_description}"
+        )
+
+        try:
+            repo.remote("origin").push()
+            return commit.hexsha[:7]
+        except Exception:
+            # Commit exists locally even if push fails
+            return f"{commit.hexsha[:7]} (local)"
+
+    except InvalidGitRepositoryError:
+        return "Render deployment"
