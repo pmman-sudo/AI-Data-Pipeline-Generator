@@ -139,6 +139,7 @@ st.header("🤖 AI Pipeline Generator")
 artifact_type = st.selectbox(
     "Artifact Type",
     [
+        "Generate Complete Pipeline",
         "airflow",
         "sql",
         "dbt",
@@ -181,7 +182,11 @@ if generate:
                 f"{API_URL}/generate",
                 json={
                     "task": task,
-                    "artifact_type": artifact_type
+                    "artifact_type": (
+                        "all"
+                        if artifact_type == "Generate Complete Pipeline"
+                        else artifact_type
+                    )
                 },
                 timeout=120
             )
@@ -203,48 +208,65 @@ if generate:
                 st.subheader("📄 Generated Artifact")
                 st.code(artifact_path)
 
-                generated_code = ""
+                # ==========================================
+                # Display Generated Artifact
+                # ==========================================
 
-                try:
+                if artifact_path.endswith(".zip"):
 
-                    with open(
-                        artifact_path,
-                        "r",
-                        encoding="utf-8"
-                    ) as f:
+                    st.subheader("📦 Complete Pipeline Package")
 
-                        generated_code = f.read()
+                    with open(artifact_path, "rb") as f:
 
-                    st.subheader("💻 Generated Code")
-
-                    language_map = {
-                        "airflow": "python",
-                        "sql": "sql",
-                        "dbt": "sql",
-                        "yaml": "yaml",
-                        "readme": "markdown"
-                    }
-
-                    st.code(
-                        generated_code,
-                        language=language_map.get(
-                            artifact_type,
-                            "text"
+                        st.download_button(
+                            label="⬇ Download Complete Pipeline",
+                            data=f,
+                            file_name=Path(artifact_path).name,
+                            mime="application/zip"
                         )
-                    )
 
-                    st.download_button(
-                        label="⬇ Download Artifact",
-                        data=generated_code,
-                        file_name=Path(artifact_path).name,
-                        mime="text/plain"
-                    )
+                else:
 
-                except Exception as e:
+                    try:
 
-                    st.warning(
-                        f"Could not open generated file:\n\n{e}"
-                    )
+                        with open(
+                            artifact_path,
+                            "r",
+                            encoding="utf-8"
+                        ) as f:
+
+                            generated_code = f.read()
+
+                        st.subheader("💻 Generated Code")
+
+                        language_map = {
+                            "airflow": "python",
+                            "sql": "sql",
+                            "dbt": "sql",
+                            "yaml": "yaml",
+                            "readme": "markdown"
+                        }
+
+                        st.code(
+                            generated_code,
+                            language=language_map.get(
+                                artifact_type,
+                                "text"
+                            )
+                        )
+
+                        st.download_button(
+                            label="⬇ Download Artifact",
+                            data=generated_code,
+                            file_name=Path(artifact_path).name,
+                            mime="text/plain"
+                        )
+
+                    except Exception as e:
+
+                        st.warning(
+                            f"Could not open generated file:\n\n{e}"
+                        )
 
                 # ==========================================
                 # Security Policy
@@ -290,4 +312,3 @@ if generate:
         except Exception as e:
 
             st.error(f"Error:\n\n{e}")
-            

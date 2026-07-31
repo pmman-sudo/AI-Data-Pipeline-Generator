@@ -1,0 +1,15 @@
+Generate YAML configuration.
+
+Include
+
+source
+
+database
+
+table
+
+owner
+
+tags
+
+columns

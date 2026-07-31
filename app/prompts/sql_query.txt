@@ -1,0 +1,8 @@
+Generate ANSI SQL.
+
+Requirements:
+
+- Use ONLY provided columns
+- No fake columns
+- Proper aliases
+- Clean formatting
