@@ -6,7 +6,7 @@ from pathlib import Path
 # FastAPI Backend
 # ==========================================
 
-API_URL = "https://your-backend.onrender.com"
+API_URL = "https://ai-data-pipeline-generator.onrender.com"
 
 # ==========================================
 # Helper Functions

@@ -96,6 +96,7 @@ class MetadataService:
         except HTTPException:
             # Re-raise the 404 so it isn't caught by the broad exception below
             raise
+            
         except HTTPException:
             raise
 
