@@ -1,39 +1,32 @@
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "AllowDbtModelExecution",
-            "Effect": "Allow",
-            "Action": [
-                "s3:GetObject",
-                "s3:ListBucket"
-            ],
-            "Resource": [
-                "arn:aws:s3:::your-bucket-name/*",
-                "arn:aws:s3:::your-bucket-name"
-            ]
-        },
-        {
-            "Sid": "AllowGlueAccess",
-            "Effect": "Allow",
-            "Action": [
-                "glue:GetTable",
-                "glue:GetTables",
-                "glue:SearchTables"
-            ],
-            "Resource": [
-                "*"
-            ]
-        },
-        {
-            "Sid": "AllowIAMPassRole",
-            "Effect": "Allow",
-            "Action": [
-                "iam:PassRole"
-            ],
-            "Resource": [
-                "arn:aws:iam::your-account-id:role/your-glue-execution-role"
-            ]
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DbtModelExecution",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-bucket-name",
+        "arn:aws:s3:::your-bucket-name/*"
+      ]
+    },
+    {
+      "Sid": "DbtModelReadFromLoggingEvents",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::your-logging-events-bucket-name/*"
+    },
+    {
+      "Sid": "DbtModelWriteToFctUsersCreated",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::your-fct-users-created-bucket-name/*"
+    }
+  ]
 }

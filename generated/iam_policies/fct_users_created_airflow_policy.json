@@ -1,23 +1,24 @@
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "AllowHiveQuery",
-            "Effect": "Allow",
-            "Action": [
-                "hive:Query"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Sid": "AllowLogging",
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": "arn:aws:logs:*:*:*"
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowHiveAccess",
+      "Effect": "Allow",
+      "Action": [
+        "hive:GetTable",
+        "hive:Select"
+      ],
+      "Resource": "arn:aws:hive:region:account-id:table/logging_events"
+    },
+    {
+      "Sid": "AllowAirflowExecution",
+      "Effect": "Allow",
+      "Action": [
+        "airflow:PublishMetrics",
+        "airflow:CreateTaskInstance",
+        "airflow:UpdateTaskInstanceState"
+      ],
+      "Resource": "arn:aws:airflow:region:account-id:task-instance/*"
+    }
+  ]
 }
