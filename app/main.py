@@ -1,6 +1,7 @@
 from typing import Dict, Optional
 import os
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -86,6 +87,19 @@ def get_schema(table: str):
     metadata_service = MetadataService()
     return metadata_service.get_table_context(table)
 
+@app.get("/download")
+def download_file(path: str):
+
+    if not os.path.exists(path):
+        raise HTTPException(
+            status_code=404,
+            detail="File not found."
+        )
+
+    return FileResponse(
+        path,
+        filename=os.path.basename(path)
+    )
 
 # ==========================================================
 # Generate Endpoint

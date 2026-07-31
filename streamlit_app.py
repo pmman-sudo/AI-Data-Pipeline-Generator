@@ -216,14 +216,14 @@ if generate:
 
                     st.subheader("📦 Complete Pipeline Package")
 
-                    with open(artifact_path, "rb") as f:
+                    download_url = (
+                        f"{API_URL}/download?path={artifact_path}"
+                    )
 
-                        st.download_button(
-                            label="⬇ Download Complete Pipeline",
-                            data=f,
-                            file_name=Path(artifact_path).name,
-                            mime="application/zip"
-                        )
+                    st.link_button(
+                        "⬇ Download Complete Pipeline",
+                        download_url
+                    )
 
                 else:
 
