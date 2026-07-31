@@ -446,12 +446,15 @@ RULES
         # Write Metadata Back to DataHub
         # --------------------------------------------------
 
-        write_generation_metadata(
-            table_name=table_name,
-            artifact_path=result["artifact_path"],
-            prompt=prompt,
-            commit_hash=commit_hash,
-        )
+        try:
+            write_generation_metadata(
+                table_name=table_name,
+                artifact_path=result["artifact_path"],
+                prompt=prompt,
+                commit_hash=commit_hash,
+            )
+        except Exception as e:
+            print(f"DataHub writeback skipped: {e}")
         
         # --------------------------------------------------
         # Return Response
