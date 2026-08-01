@@ -29,7 +29,7 @@ def test_generate_returns_artifact(mocker):
 
     # 2. Mock the GitHub commit
     mocker.patch(
-        "app.main.commit_and_push",
+        "app.main.commit_generated_artifact",
         return_value="mock123"
     )
 
