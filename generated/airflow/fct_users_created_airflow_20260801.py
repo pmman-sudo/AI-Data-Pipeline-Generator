@@ -1,10 +1,9 @@
+from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.providers.amazon.aws.transfers.sql import SQLTransfer
-from airflow.utils.dates import days_ago
-from airflow.utils.log.logging_mixin import LoggingMixin
-from datetime import datetime, timedelta
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 import logging
+import json
 
 default_args = {
     'owner': 'Demo',
@@ -12,47 +11,42 @@ default_args = {
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 3,
-    'retry_delay': timedelta(minutes=5),
+    'retry_delay': timedelta(minutes=5)
 }
 
 dag = DAG(
-    'count_new_users',
+    'ingest_fct_users_created',
     default_args=default_args,
-    description='Count new users created each day',
-    schedule_interval=timedelta(days=1),
-    start_date=days_ago(1),
-    tags=['Demo'],
+    description='Ingest fct_users_created table every day at midnight',
+    schedule_interval='@daily',
+    start_date=datetime(2023, 12, 1),
+    tags=['Demo']
 )
 
-def count_new_users(**kwargs):
-    """Count new users created each day"""
+def ingest_fct_users_created(**kwargs):
+    """
+    Ingest fct_users_created table.
+
+    :param kwargs: Keyword arguments
+    :return: None
+    """
     try:
-        logging.info("Counting new users created each day")
-        query = """
-            SELECT 
-                DATE(created_at) AS created_date,
-                COUNT(*) AS new_users
-            FROM 
-                fct_users_created
-            GROUP BY 
-                DATE(created_at)
-            ORDER BY 
-                created_date DESC
-        """
-        transfer = SQLTransfer(
-            task_id='count_new_users',
-            query=query,
-            destination_table='new_users_count',
-            database='my_database'
-        )
-        transfer.execute(kwargs)
-        logging.info("Counting new users completed successfully")
+        # Establish a connection to the database
+        # TODO: Replace with your actual database connection
+        conn = None
+
+        # Ingest the fct_users_created table
+        # TODO: Replace with your actual ingestion logic
+        logging.info('Ingesting fct_users_created table')
+        conn.cursor().execute('SELECT * FROM fct_users_created')
+        logging.info('Ingestion complete')
+
     except Exception as e:
-        logging.error(f"Error counting new users: {str(e)}")
+        logging.error(f'Error ingesting fct_users_created table: {e}')
         raise
 
-count_new_users_task = PythonOperator(
-    task_id='count_new_users_task',
-    python_callable=count_new_users,
+ingest_fct_users_created_task = PythonOperator(
+    task_id='ingest_fct_users_created',
+    python_callable=ingest_fct_users_created,
     dag=dag
 )
