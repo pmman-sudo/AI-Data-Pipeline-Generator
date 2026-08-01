@@ -2,6 +2,8 @@ import streamlit as st
 import requests
 from pathlib import Path
 
+API_URL = "https://ai-data-pipeline-generator.onrender.com"
+
 # ==========================================
 # Helper Functions
 # ==========================================
