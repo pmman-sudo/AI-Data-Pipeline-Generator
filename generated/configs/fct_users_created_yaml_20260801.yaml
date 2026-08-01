@@ -1,0 +1,12 @@
+source: demo
+database: demo
+table: fct_users_created
+owner: Demo
+tags: [Demo]
+columns:
+  - name: user_id
+    type: BIGINT
+  - name: created_at
+    type: TIMESTAMP
+  - name: email
+    type: STRING
