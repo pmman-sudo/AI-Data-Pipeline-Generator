@@ -68,7 +68,20 @@ def commit_generated_artifact(artifact_path: str, commit_message: str) -> str:
     Returns the short commit SHA.
     """
 
-    github_path = artifact_path.replace("\\", "/")
+    path = Path(artifact_path)
+
+    try:
+        # Running on Render
+        github_path = path.relative_to("/opt/render/project/src").as_posix()
+    except ValueError:
+        # Running locally
+        github_path = path.as_posix()
+
+    # Ensure GitHub receives a repository-relative path
+    github_path = Path(github_path).as_posix()
+
+    if "generated/" in github_path:
+        github_path = "generated/" + github_path.split("generated/", 1)[1]
 
     url = f"{BASE_URL}/contents/{github_path}"
 
@@ -82,6 +95,8 @@ def commit_generated_artifact(artifact_path: str, commit_message: str) -> str:
 
     if existing_sha:
         payload["sha"] = existing_sha
+    
+    print(f"Uploading to GitHub path: {github_path}")
 
     response = requests.put(
         url,
@@ -90,7 +105,9 @@ def commit_generated_artifact(artifact_path: str, commit_message: str) -> str:
         timeout=60,
     )
 
-    response.raise_for_status()
+    if not response.ok:
+        print("GitHub response:", response.text)
+        response.raise_for_status()
 
     data = response.json()
 
