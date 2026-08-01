@@ -10,7 +10,7 @@ from app.datahub.writeback import write_generation_metadata
 from app.utils.package_generator import create_pipeline_package
 import shutil
 import time
-from app.github.api import commit_generated_artifact
+from app.github.service import commit_and_push
 from app.llm.provider import generate
 from app.security.validator import (
     extract_code_blocks,
@@ -471,10 +471,7 @@ RULES
         start = time.time()
 
         try:
-            commit_hash = commit_generated_artifact(
-                artifact_path=result["artifact_path"],
-                commit_message=req.task
-            )
+            commit_hash = commit_and_push(req.task)
         except Exception as e:
             print(f"GitHub commit skipped: {e}")
             commit_hash = "Not committed"
