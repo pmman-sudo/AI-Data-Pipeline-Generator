@@ -10,7 +10,7 @@ from app.datahub.writeback import write_generation_metadata
 from app.utils.package_generator import create_pipeline_package
 import shutil
 import time
-from app.github.service import commit_and_push
+from app.github.api import commit_generated_artifact
 from app.llm.provider import generate
 from app.security.validator import (
     extract_code_blocks,
