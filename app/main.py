@@ -471,7 +471,10 @@ RULES
         start = time.time()
 
         try:
-            commit_hash = commit_and_push(req.task)
+            commit_hash = commit_generated_artifact(
+                artifact_path=result["artifact_path"],
+                commit_message=req.task
+            )
         except Exception as e:
             print(f"GitHub commit skipped: {e}")
             commit_hash = "Not committed"
