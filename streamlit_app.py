@@ -216,15 +216,14 @@ if generate:
 
                 else:
 
+                    download_url = f"{API_URL}/download?path={artifact_path}"
+
                     try:
 
-                        with open(
-                            artifact_path,
-                            "r",
-                            encoding="utf-8"
-                        ) as f:
+                        response = requests.get(download_url, timeout=(10, 60))
+                        response.raise_for_status()
 
-                            generated_code = f.read()
+                        generated_code = response.text
 
                         st.subheader("💻 Generated Code")
 
@@ -254,7 +253,7 @@ if generate:
                     except Exception as e:
 
                         st.warning(
-                            f"Could not open generated file:\n\n{e}"
+                            f"Could not download generated artifact:\n\n{e}"
                         )
 
                 # ==========================================
