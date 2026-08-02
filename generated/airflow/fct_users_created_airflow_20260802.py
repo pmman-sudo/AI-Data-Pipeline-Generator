@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.utils.dates import days_ago
+from airflow.operators.bash_operator import BashOperator
+from airflow.operators.python_operator import PythonOperator
 import logging
 
 default_args = {
@@ -11,28 +11,50 @@ default_args = {
     'email_on_retry': False,
     'retries': 3,
     'retry_delay': timedelta(minutes=5),
+    'start_date': datetime(2024, 1, 1)
 }
 
-def load_fct_users_created(**kwargs):
-    """
-    Load data into fct_users_created table.
-    """
+def create_fct_users_created(**kwargs):
     try:
-        # Simulating data load, replace with actual data load logic
-        logging.info("Loading data into fct_users_created table")
+        # Create fct_users_created table
+        logging.info('Creating fct_users_created table')
+        # Add your SQL query or function to create the table here
+        logging.info('fct_users_created table creation successful')
     except Exception as e:
-        logging.error(f"Error loading data: {str(e)}")
-        raise
+        logging.error(f'Error creating fct_users_created table: {e}')
 
-with DAG(
+def populate_fct_users_created(**kwargs):
+    try:
+        # Populate fct_users_created table
+        logging.info('Populating fct_users_created table')
+        # Add your SQL query or function to populate the table here
+        logging.info('fct_users_created table population successful')
+    except Exception as e:
+        logging.error(f'Error populating fct_users_created table: {e}')
+
+dag = DAG(
     'fct_users_created_dag',
     default_args=default_args,
-    description='DAG to load data into fct_users_created table',
     schedule_interval='@daily',
-    start_date=days_ago(1),
-    tags=['Demo'],
-) as dag:
-    load_fct_users_created_task = PythonOperator(
-        task_id='load_fct_users_created',
-        python_callable=load_fct_users_created,
-    )
+    tags=['Demo']
+)
+
+create_fct_users_created_task = PythonOperator(
+    task_id='create_fct_users_created',
+    python_callable=create_fct_users_created,
+    dag=dag
+)
+
+populate_fct_users_created_task = PythonOperator(
+    task_id='populate_fct_users_created',
+    python_callable=populate_fct_users_created,
+    dag=dag
+)
+
+end_task = BashOperator(
+    task_id='end_task',
+    bash_command='echo "fct_users_created dag completed"',
+    dag=dag
+)
+
+create_fct_users_created_task >> populate_fct_users_created_task >> end_task
