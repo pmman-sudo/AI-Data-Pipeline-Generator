@@ -1,0 +1,53 @@
+---
+version: 1.0
+env: production
+source:
+  type: postgres
+  database: customer_database
+  table: customer_orders
+  owner: Demo
+  tags: Demo
+  columns:
+    - name: user_id
+      type: BIGINT
+    - name: created_at
+      type: TIMESTAMP
+    - name: email
+      type: STRING
+destination:
+  type: snowflake
+  database: customer_database
+  table: customer_orders
+  warehouse: customer_warehouse
+  incremental_loading: true
+  partition_by: updated_at
+logging:
+  level: INFO
+airflow:
+  enabled: true
+  schedule_interval: 0 0 * * *
+datahub:
+  enabled: true
+  ingestion_interval: 60
+credentials:
+  postgres:
+    host: ${POSTGRES_HOST}
+    port: ${POSTGRES_PORT}
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+  snowflake:
+    account: ${SNOWFLAKE_ACCOUNT}
+    username: ${SNOWFLAKE_USERNAME}
+    password: ${SNOWFLAKE_PASSWORD}
+retry_policy:
+  enabled: true
+  max_retries: 3
+  retry_delay: 5
+pipeline_timeout:
+  hours: 1
+data_quality:
+  validation_enabled: true
+  validation_threshold: 0.95
+alert_email_recipients:
+  - demo@example.com
+  - example@example.com
