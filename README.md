@@ -13,7 +13,7 @@ The AI Data Pipeline Generator automatically produces the following production-r
 | Apache Airflow DAG | `examples/airflow/production_airflow_pipeline.py.png` |
 | YAML Pipeline Configuration | `examples/yaml/pipeline_config.yaml.png` |
 | dbt Fact Model | `examples/dbt/fct_users_created_dbtfact_model.png` |
-| SQL Transformation | `examples/sql/sales_transformation.sql` |
+| SQL Transformation | `examples/sql/sales_transformation.sql.png` |
 | Project Documentation (README) | `examples/README/generated_project_readme.png` |.
 
 ---
