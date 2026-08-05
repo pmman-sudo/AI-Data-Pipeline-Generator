@@ -1,6 +1,20 @@
 # 🚀 AI Data Pipeline Generator
 
-> A metadata-aware AI platform where an autonomous Data Engineering Agent leverages enterprise metadata to generate secure, validated, production-ready pipelines, infrastructure configurations, and engineering assets from natural language.
+> An AI-powered Data Engineering Agent that transforms natural language into production-ready data pipelines, SQL transformations, dbt models, Airflow DAGs, and infrastructure configurations using enterprise context and metadata intelligence.
+
+---
+
+## 📦 Generated Artifacts
+
+The AI Data Pipeline Generator automatically produces the following production-ready engineering assets from a single natural language prompt:
+
+| Artifact | Example |
+|----------|---------|
+| Apache Airflow DAG | `examples/airflow/production_airflow_pipeline.py.png` |
+| YAML Pipeline Configuration | `examples/yaml/pipeline_config.yaml.png` |
+| dbt Fact Model | `examples/dbt/fct_users_created_dbtfact_model.png` |
+| SQL Transformation | `examples/sql/sales_transformation.sql` |
+| Project Documentation (README) | `examples/README/generated_project_readme.png` |.
 
 ---
 
