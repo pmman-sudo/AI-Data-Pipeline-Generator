@@ -1,0 +1,116 @@
+1.) Folder: airflow
+Filename: production_airflow_pipeline.py
+
+Artifact Type: airflow DAG
+Dataset: fct_users_created
+Prompt: "Generate a production-ready Apache Airflow DAG named customer_orders_pipeline.
+Requirements:
+• Source database: PostgreSQL
+• Destination warehouse: Snowflake
+• Extract customer_orders table incrementally using updated_at
+• Validate schema before extraction
+• Perform data quality checks (null values, duplicates, row count)
+• Load transformed data into Snowflake
+• Trigger dbt models after successful load
+• Update DataHub metadata after pipeline completion
+• Send Slack notification on success or failure
+• Retry failed tasks 3 times with exponential backoff
+• Enable task logging and monitoring
+• Schedule to run daily at 2:00 AM UTC
+• Follow Airflow best practices using TaskFlow API
+• Add clear documentation and comments"
+
+
+
+
+2) Folder: yaml
+filename: pipeline_config.yaml
+
+Artifact Type: yaml
+Dataset: fct_users_created
+Prompt: "Generate a production-ready YAML configuration for a customer_orders ETL pipeline.
+Requirements:
+• Environment: Production
+• Source: PostgreSQL
+• Destination: Snowflake
+• Incremental loading enabled
+• Partition by updated_at
+• Enable Airflow scheduling
+• Enable DataHub metadata ingestion
+• Configure logging level as INFO
+• Configure alert email recipients
+• Enable retry policy
+• Configure pipeline timeout
+• Enable data quality validation
+• Store credentials using environment variables"
+
+
+
+
+3) Folder: dbt
+filename: fct_users_created_dbtfact_model1
+
+Artifact Type: dbt
+Dataset: fct_users_created
+Prompt: "Generate a production-ready dbt fact model named fct_users_created.
+Requirements:
+• Source table: raw_users
+• Keep only active users
+• Remove duplicate user IDs
+• Standardize email addresses to lowercase
+• Parse signup timestamp
+• Create signup_date column
+• Create created_month dimension
+• Generate surrogate key
+• Add dbt config block with incremental materialization
+• Include schema.yml documentation
+• Follow dbt best practices"
+
+
+
+
+4) Folder: sql
+filename: sales_transformation.sql
+
+Artifact Type: sql
+Dataset: fct_users_created
+Prompt: "Generate a production-ready SQL transformation script for customer_orders.
+Requirements:
+• Read from raw.customer_orders
+• Remove duplicate orders
+• Filter cancelled orders
+• Standardize timestamps to UTC
+• Calculate total_sales
+• Calculate order_count
+• Calculate average_order_value
+• Aggregate by customer_id
+• Create a final analytics-ready table
+• Optimize using Common Table Expressions (CTEs)
+• Include comments explaining each transformation"
+
+
+
+
+5)Folder: Readme
+filename: generated_project_readme.png
+
+Artifact Type: README
+Dataset:fct_users_created
+Prompt: "Generate comprehensive project documentation for a production-ready data pipeline built around the fct_users_created dataset.
+Include:
+• Project overview
+• Pipeline architecture
+• Dataset description
+• Prerequisites
+• Installation instructions
+• Configuration steps
+• Airflow DAG overview
+• SQL transformation summary
+• dbt model description
+• Deployment instructions
+• Monitoring and logging recommendations
+• Troubleshooting guide
+• Best practices
+• Example usage
+• Future improvements
+Write the documentation in professional Markdown suitable for a production GitHub repository."
