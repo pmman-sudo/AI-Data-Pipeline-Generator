@@ -1,0 +1,30 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DbtModelExecutionPolicy",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-bucket-name/raw_orders",
+        "arn:aws:s3:::your-bucket-name/raw_customers"
+      ]
+    },
+    {
+      "Sid": "DbtModelExecutionPolicyGlue",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetTable",
+        "glue:GetTables",
+        "glue:SearchTables"
+      ],
+      "Resource": [
+        "arn:aws:glue:region:account-id:table/your-database-name/raw_orders",
+        "arn:aws:glue:region:account-id:table/your-database-name/raw_customers"
+      ]
+    }
+  ]
+}

@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from app.skills.orchestrator import SkillOrchestrator
 
 from app.datahub.client import MetadataService
 from app.datahub.writeback import write_generation_metadata
@@ -193,10 +194,68 @@ def generate_pipeline(req: GenerateRequest):
         start = time.time()
 
         metadata_service = MetadataService()
+
         try:
             metadata = metadata_service.get_table_context(table_name)
+
         except Exception:
             metadata = MetadataService().get_table_context("fct_users_created")
+
+       # --------------------------------------------------
+       # Decide which skills to run
+       # --------------------------------------------------
+
+        workflow = ["search"]
+
+        task = req.task.lower()
+
+        # Request-based skills
+        if "lineage" in task and "lineage" not in workflow:
+            workflow.append("lineage")
+
+        if "quality" in task and "quality" not in workflow:
+            workflow.append("quality")
+
+        if (
+            "description" in task
+            or "documentation" in task
+            or "metadata" in task
+        ) and "enrich" not in workflow:
+            workflow.append("enrich")
+
+
+        skill_context = {
+            "dataset": table_name
+        }
+
+        skill_metadata = SkillOrchestrator().run(
+            workflow,
+            skill_context
+        )
+
+        skill_prompt = f"""
+        ==================================================
+
+        DATAHUB SKILLS
+
+        Asset Found
+        {skill_metadata.get("asset_found")}
+
+        Owner
+        {skill_metadata.get("owner")}
+
+        Quality Status
+        {skill_metadata.get("quality")}
+
+        Generated Description
+        {skill_metadata.get("description")}
+
+        Upstream Assets
+        {skill_metadata.get("upstream")}
+
+        Downstream Assets
+        {skill_metadata.get("downstream")}
+        """
 
         print(f"Metadata lookup: {time.time() - start:.2f}s")
         
@@ -283,6 +342,10 @@ UPSTREAM LINEAGE
 
 ==================================================
 
+{skill_prompt}
+
+==================================================
+
 GENERATION INSTRUCTIONS
 
 {template}
@@ -336,6 +399,53 @@ RULES
                     "readme": "README Documentation",
                 }[current_type]
 
+                #Build workflow for this specific artifact
+
+                current_workflow = ["search"]
+
+                if current_type == "sql":
+                    current_workflow.append("lineage")
+
+                elif current_type == "airflow":
+                    current_workflow.append("lineage")
+
+                elif current_type == "dbt":
+                    current_workflow.extend(["lineage", "quality"])
+
+                elif current_type == "yaml":
+                    current_workflow.append("quality")
+
+                elif current_type == "readme":
+                    current_workflow.append("enrich")
+                current_skill_metadata = SkillOrchestrator().run(
+                    current_workflow,
+                    {"dataset": table_name}
+                )
+                current_skill_prompt = f"""
+==================================================
+
+DATAHUB SKILLS
+
+Asset Found
+{current_skill_metadata.get("asset_found")}
+
+Owner
+{current_skill_metadata.get("owner")}
+
+Quality Status
+{current_skill_metadata.get("quality")}
+
+Generated Description
+{current_skill_metadata.get("description")}
+
+Upstream Assets
+{current_skill_metadata.get("upstream")}
+
+Downstream Assets
+{current_skill_metadata.get("downstream")}
+"""
+
+
                 current_prompt = f"""
         You are a Senior Data Engineer.
 
@@ -368,6 +478,8 @@ RULES
         UPSTREAM LINEAGE
 
         {lineage}
+
+        {current_skill_prompt}
 
         GENERATION INSTRUCTIONS
 
