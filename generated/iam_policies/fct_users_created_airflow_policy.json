@@ -2,27 +2,12 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "AllowHiveQuery",
+            "Sid": "AllowedPermissions",
             "Effect": "Allow",
             "Action": [
-                "hive:GetTable",
-                "hive:GetPartition"
-            ],
-            "Resource": "arn:aws:hive:region:account-id:table/logging_events"
-        },
-        {
-            "Sid": "AllowHiveInsert",
-            "Effect": "Allow",
-            "Action": [
-                "hive:Insert"
-            ],
-            "Resource": "arn:aws:hive:region:account-id:table/fct_users_created"
-        },
-        {
-            "Sid": "AllowAirflowExecution",
-            "Effect": "Allow",
-            "Action": [
-                "airflow:ExecuteTask"
+                "airflow:PublishMetrics",
+                "airflow:CreateTaskInstance",
+                "airflow:UpdateTaskInstanceState"
             ],
             "Resource": "*"
         }

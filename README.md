@@ -24,6 +24,7 @@ The AI Data Pipeline Generator automatically produces the following production-r
 - Problem Statement
 - Features
 - Architecture
+- Prompt Generation Pipeline
 - System Workflow
 - Tech Stack
 - Design Decisions
@@ -99,6 +100,32 @@ The AI Data Pipeline Generator combines enterprise metadata, artificial intellig
 - Incorporate schema, column definitions, ownership, tags, and lineage into AI prompts.
 - Produce metadata-aware artifacts instead of generic code templates.
 
+
+### 🧠 AI Skill Orchestration
+
+The AI Data Pipeline Generator uses a Skill Orchestrator to dynamically enrich AI prompts based on the artifact being generated.
+
+Instead of sending the same metadata for every request, the backend selects specialized metadata skills that provide only the most relevant context.
+
+Supported skills include:
+
+- Search
+- Dataset Lineage
+- Data Quality
+- Metadata Enrichment
+
+Each artifact invokes a different workflow:
+
+| Artifact | Skills |
+|-----------|--------|
+| SQL | Search + Lineage |
+| Airflow DAG | Search + Lineage |
+| dbt Model | Search + Lineage + Quality |
+| YAML Config | Search + Quality |
+| README | Search + Metadata Enrichment |
+
+This improves generation quality while reducing unnecessary prompt context.
+
 ---
 
 ### 🛡 Security & Governance
@@ -157,23 +184,41 @@ A["👤 User"] --> B["🖥 Streamlit Frontend"]
 
 B --> C["⚡ FastAPI Backend"]
 
-C --> D["📊 DataHub Metadata Service"]
+C --> D["📊 DataHub Metadata"]
 C --> E["🧠 Groq LLM"]
-C --> F["✅ Validation Engine"]
-C --> G["🔒 IAM Policy Generator"]
-C --> H["📦 Artifact Generator"]
-C --> I["🐙 GitHub Contents API"]
+C --> F["🧩 Skill Orchestrator"]
+F --> G["🔍 Search Skill"]
+F --> H["🌐 Lineage Skill"]
+F --> I["📈 Quality Skill"]
+F --> J["📝 Enrichment Skill"]
+
+C --> K["✅ Validation Engine"]
+C --> L["🔒 IAM Policy Generator"]
+C --> M["📦 Artifact Packaging"]
+C --> N["🐙 GitHub API"]
+C --> O["✍️ DataHub Write-back"]
 
 D --> C
 E --> C
-F --> C
 G --> C
 H --> C
 I --> C
+J --> C
+K --> C
+L --> C
+M --> C
+N --> C
+O --> C
 
-C --> J["📥 Downloadable Artifacts"]
+C --> P["📥 Downloadable Artifacts"]
+C --> Q["🔗 Git Commit SHA"]
+C --> R["📊 Validation Results"]
 
-J --> A
+P --> B
+Q --> B
+R --> B
+
+B --> A
 ```
 
 ### Architecture Components
@@ -188,6 +233,41 @@ J --> A
 | **IAM Policy Generator** | Produces least-privilege AWS IAM policies alongside generated pipelines. |
 | **Artifact Generator** | Packages generated files into downloadable ZIP archives or individual artifacts. |
 | **GitHub API** | Uploads generated artifacts to the repository and returns commit hashes for traceability. |
+
+
+## Prompt Generation Pipeline
+
+Every generation request follows the same high-level process:
+
+```text
+Natural Language Request
+        │
+        ▼
+Infer Artifact Type
+        │
+        ▼
+Retrieve Metadata
+        │
+        ▼
+Run Skill Orchestrator
+        │
+        ▼
+Construct Metadata-aware Prompt
+        │
+        ▼
+Groq LLM
+        │
+        ▼
+Validation
+        │
+        ▼
+GitHub Commit
+        │
+        ▼
+Return Generated Artifact
+```
+
+This architecture ensures that every generated artifact is enriched with the most relevant metadata before being sent to the language model.
 
 
 ## System Workflow
