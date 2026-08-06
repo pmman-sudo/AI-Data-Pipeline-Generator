@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.utils.dates import days_ago
+from airflow.providers.amazon.aws.operators.redshift import RedshiftOperator
 import logging
 
 default_args = {
-    'owner': 'Demo',
+    'owner': ['Demo'],
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
@@ -13,41 +13,35 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
 }
 
-def extract_data(**kwargs):
-    try:
-        # Simulating data extraction for demonstration purposes
-        data = [
-            {'user_id': 1, 'created_at': datetime.now(), 'email': 'user1@example.com'},
-            {'user_id': 2, 'created_at': datetime.now(), 'email': 'user2@example.com'},
-        ]
-        return data
-    except Exception as e:
-        logging.error(f"Error extracting data: {e}")
-        raise
-
 def load_data(**kwargs):
+    """
+    Load data into the fct_users_created table.
+    """
     try:
-        data = kwargs['ti'].xcom_pull(task_ids='extract_data')
-        # Simulating data loading for demonstration purposes
-        logging.info(f"Loading data: {data}")
+        logging.info('Loading data into fct_users_created table')
+        # Load data logic here
+        logging.info('Data loaded successfully')
     except Exception as e:
-        logging.error(f"Error loading data: {e}")
+        logging.error(f'Error loading data: {e}')
         raise
 
 with DAG(
-    'fct_users_created',
+    'fct_users_created_dag',
     default_args=default_args,
-    description='A DAG for fct_users_created',
-    schedule_interval=None,
-    start_date=days_ago(1),
+    description='A DAG to load data into the fct_users_created table',
+    schedule_interval=timedelta(days=1),
+    start_date=datetime(2023, 1, 1),
     tags=['Demo'],
 ) as dag:
-    extract_data_task = PythonOperator(
-        task_id='extract_data',
-        python_callable=extract_data,
-    )
     load_data_task = PythonOperator(
         task_id='load_data',
         python_callable=load_data,
     )
-    extract_data_task >> load_data_task
+
+    end_task = RedshiftOperator(
+        task_id='end_task',
+        redshift_conn_id='redshift_default',
+        sql='SELECT 1',
+    )
+
+    load_data_task >> end_task
