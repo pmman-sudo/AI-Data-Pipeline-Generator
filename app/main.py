@@ -5,6 +5,8 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.skills.orchestrator import SkillOrchestrator
+from app.planner.planner import Planner
+from app.planner.executor import Executor
 
 from app.datahub.client import MetadataService
 from app.datahub.writeback import write_generation_metadata
@@ -69,7 +71,8 @@ class GenerateResponse(BaseModel):
     security_policy: str
     validation: Dict[str, str]
     commit: str = "pending"
-
+    plan: list = []
+    execution_results: dict = {}
 
 # ==========================================================
 # Health Endpoint
@@ -117,7 +120,7 @@ def generate_pipeline(req: GenerateRequest):
     # Determine artifact type
     # ------------------------------------------------------
 
-    artifact_type = req.get_inferred_type()
+    artifact_type = req.artifact_type or "agent"
 
 
     template_map = {
@@ -169,473 +172,215 @@ def generate_pipeline(req: GenerateRequest):
                 table_name = candidate
 
                 
-    package_dir = None
-
-    if artifact_type == "all":
-        package_dir = create_pipeline_package(table_name)
+    # ======================================================
+    # NEW AGENT PLANNER + EXECUTOR
+    # ======================================================
 
     try:
 
-        # --------------------------------------------------
-        # Load prompt template
-        # --------------------------------------------------
-
-        with open(
-            f"app/prompts/{template_file}",
-            "r",
-            encoding="utf-8"
-        ) as f:
-            template = f.read()
-
-        # --------------------------------------------------
-        # Load DataHub Metadata
-        # --------------------------------------------------
-
-        start = time.time()
-
-        metadata_service = MetadataService()
-
-        try:
-            metadata = metadata_service.get_table_context(table_name)
-
-        except Exception:
-            metadata = MetadataService().get_table_context("fct_users_created")
-
-       # --------------------------------------------------
-       # Decide which skills to run
-       # --------------------------------------------------
-
-        workflow = ["search"]
-
-        task = req.task.lower()
-
-        # Request-based skills
-        if "lineage" in task and "lineage" not in workflow:
-            workflow.append("lineage")
-
-        if "quality" in task and "quality" not in workflow:
-            workflow.append("quality")
-
-        if (
-            "description" in task
-            or "documentation" in task
-            or "metadata" in task
-        ) and "enrich" not in workflow:
-            workflow.append("enrich")
-
-
-        skill_context = {
-            "dataset": table_name
-        }
-
-        skill_metadata = SkillOrchestrator().run(
-            workflow,
-            skill_context
-        )
-
-        skill_prompt = f"""
-        ==================================================
-
-        DATAHUB SKILLS
-
-        Asset Found
-        {skill_metadata.get("asset_found")}
-
-        Owner
-        {skill_metadata.get("owner")}
-
-        Quality Status
-        {skill_metadata.get("quality")}
-
-        Generated Description
-        {skill_metadata.get("description")}
-
-        Upstream Assets
-        {skill_metadata.get("upstream")}
-
-        Downstream Assets
-        {skill_metadata.get("downstream")}
-        """
-
-        print(f"Metadata lookup: {time.time() - start:.2f}s")
-        
-        # --------------------------------------------------
-        # Format Metadata
-        # --------------------------------------------------
-
-        columns = "\n".join(
-            f"- {col['name']} ({col['type']})"
-            for col in metadata.columns
-        ) if metadata.columns else "No columns found."
-
-        owners = ", ".join(metadata.owners) if metadata.owners else "Unknown"
-
-        tags = ", ".join(metadata.tags) if metadata.tags else "None"
-
-        lineage = "\n".join(metadata.lineage) if metadata.lineage else "None"
-
-        # --------------------------------------------------
-        # Artifact Description
-        # --------------------------------------------------
-
-        artifact_description = {
-            "sql": "ANSI SQL",
-            "airflow": "Apache Airflow DAG",
-            "dbt": "dbt Model",
-            "yaml": "YAML Configuration",
-            "readme": "README Documentation",
-        }.get(
-            artifact_type,
-            artifact_type
-        )
-
-        # --------------------------------------------------
-        # Build Rich Prompt
-        # --------------------------------------------------
-
-        prompt = f"""
-You are a Senior Data Engineer.
-
-Your job is to generate production-ready code.
-
-==================================================
-
-USER REQUEST
-
-{req.task}
-
-==================================================
-
-ARTIFACT TYPE
-
-{artifact_description}
-
-==================================================
-
-TABLE
-
-{metadata.name}
-
-==================================================
-
-COLUMNS
-
-{columns}
-
-==================================================
-
-OWNERS
-
-{owners}
-
-==================================================
-
-TAGS
-
-{tags}
-
-==================================================
-
-UPSTREAM LINEAGE
-
-{lineage}
-
-==================================================
-
-{skill_prompt}
-
-==================================================
-
-GENERATION INSTRUCTIONS
-
-{template}
-
-==================================================
-
-RULES
-
-- Return ONLY executable code.
-- Do NOT use markdown.
-- Do NOT explain anything.
-- Follow production best practices.
-- Ensure the code is syntactically correct.
-- Include no placeholder text.
-"""
-
-        # --------------------------------------------------
-        # Debug Prompt
-        # --------------------------------------------------
-
         print("\n" + "=" * 80)
-        print("PROMPT SENT TO GROQ")
+        print("AI AGENT PLANNER")
         print("=" * 80)
-        print(prompt)
-        print("=" * 80 + "\n")
+
+        # Create the planning agent
+        planner = Planner()
+
+        # Create the execution engine
+        executor = Executor()
 
         # --------------------------------------------------
-        # Generate One or Multiple Artifacts
+        # Create execution plan from user's request
         # --------------------------------------------------
 
-        if artifact_type == "all":
+        plan = planner.create_plan(req.task)
 
-            generated_files = []
+        print("\n========== EXECUTION PLAN ==========")
 
-            for current_type in all_artifacts:
-
-                current_template = template_map[current_type]
-
-                with open(
-                    f"app/prompts/{current_template}",
-                    "r",
-                    encoding="utf-8"
-                ) as f:
-                    current_template_text = f.read()
-
-                current_description = {
-                    "sql": "ANSI SQL",
-                    "airflow": "Apache Airflow DAG",
-                    "dbt": "dbt Model",
-                    "yaml": "YAML Configuration",
-                    "readme": "README Documentation",
-                }[current_type]
-
-                #Build workflow for this specific artifact
-
-                current_workflow = ["search"]
-
-                if current_type == "sql":
-                    current_workflow.append("lineage")
-
-                elif current_type == "airflow":
-                    current_workflow.append("lineage")
-
-                elif current_type == "dbt":
-                    current_workflow.extend(["lineage", "quality"])
-
-                elif current_type == "yaml":
-                    current_workflow.append("quality")
-
-                elif current_type == "readme":
-                    current_workflow.append("enrich")
-                current_skill_metadata = SkillOrchestrator().run(
-                    current_workflow,
-                    {"dataset": table_name}
-                )
-                current_skill_prompt = f"""
-==================================================
-
-DATAHUB SKILLS
-
-Asset Found
-{current_skill_metadata.get("asset_found")}
-
-Owner
-{current_skill_metadata.get("owner")}
-
-Quality Status
-{current_skill_metadata.get("quality")}
-
-Generated Description
-{current_skill_metadata.get("description")}
-
-Upstream Assets
-{current_skill_metadata.get("upstream")}
-
-Downstream Assets
-{current_skill_metadata.get("downstream")}
-"""
-
-
-                current_prompt = f"""
-        You are a Senior Data Engineer.
-
-        Generate production-ready code.
-
-        USER REQUEST
-
-        {req.task}
-
-        ARTIFACT TYPE
-
-        {current_description}
-
-        TABLE
-
-        {metadata.name}
-
-        COLUMNS
-
-        {columns}
-
-        OWNERS
-
-        {owners}
-
-        TAGS
-
-        {tags}
-
-        UPSTREAM LINEAGE
-
-        {lineage}
-
-        {current_skill_prompt}
-
-        GENERATION INSTRUCTIONS
-
-        {current_template_text}
-
-        Return ONLY executable code.
-        """
-
-                raw_response = generate(current_prompt)
-
-                generated_code, iam_json = extract_code_blocks(raw_response)
-
-                result = save_and_validate(
-                    table_name=table_name,
-                    generated_code=generated_code,
-                    iam_json=iam_json,
-                    artifact_type=current_type,
-                )
-
-                folder_map = {
-                    "airflow": "airflow",
-                    "sql": "sql",
-                    "dbt": "dbt",
-                    "yaml": "configs",
-                    "readme": "configs",
-                }
-
-                destination = os.path.join(
-                    package_dir,
-                    folder_map[current_type],
-                    os.path.basename(result["artifact_path"])
-                )
-
-                shutil.copy(
-                    result["artifact_path"],
-                    destination
-                )
-
-                iam_destination = os.path.join(
-                    package_dir,
-                    "iam",
-                    os.path.basename(result["iam_path"])
-                )
-
-                shutil.copy(
-                    result["iam_path"],
-                    iam_destination
-                )
-
-
-                generated_files.append(result["artifact_path"])
-
-            # --------------------------------------------
-            # Create ZIP after every artifact has been copied
-            # --------------------------------------------
-
-            zip_path = shutil.make_archive(
-                package_dir,
-                "zip",
-                package_dir
+        for step in plan.steps:
+            print(
+                f"- {step.skill.value}: {step.reason}"
             )
 
-            result = {
-                "artifact_path": zip_path,
-                "iam_path": "generated/iam_policies",
-                "validation": {
-                    "status": "pass",
-                    "details": f"{len(generated_files)} artifacts generated successfully."
-                }
+        print("====================================\n")
+
+        # --------------------------------------------------
+        # Execute the plan
+        # --------------------------------------------------
+
+        results = executor.execute(
+            plan,
+            {
+                "table": table_name,
+                "task": req.task,
             }
+        )
 
-        else:
-
-            start = time.time()
-
-            raw_response = generate(prompt)
-
-            print(f"LLM generation: {time.time() - start:.2f}s")
-
-            generated_code, iam_json = extract_code_blocks(
-                raw_response
-            )
-
-            start = time.time()
-
-            result = save_and_validate(
-                table_name=table_name,
-                generated_code=generated_code,
-                iam_json=iam_json,
-                artifact_type=artifact_type,
-            )
-
-            print(f"Validation: {time.time() - start:.2f}s")
-             
-        # --------------------------------------------------
-        # Commit to GitHub
-        # --------------------------------------------------
-        
-
-
-        start = time.time()
-
-        try:
-            commit_hash = commit_generated_artifact(
-                artifact_path=result["artifact_path"],
-                commit_message=req.task
-            )
-        except Exception as e:
-            print(f"GitHub commit skipped: {e}")
-            commit_hash = "Not committed"
-
-        print(f"GitHub: {time.time() - start:.2f}s") 
+        print("\n========== AGENT EXECUTION RESULTS ==========")
+        print(results)
+        print("==============================================\n")
 
         # --------------------------------------------------
-        # Write Metadata Back to DataHub
+        # Find generated artifact
         # --------------------------------------------------
-        
-        
-        
-        start = time.time()
 
-        DATAHUB_GMS = os.getenv("DATAHUB_GMS")
-        
-        print(f"DATAHUB_GMS={DATAHUB_GMS!r}")
+        artifact_path = None
+        iam_path = "Not generated"
+        validation = {
+            "status": "unknown",
+            "details": "No validation result returned"
+        }
+        commit_hash = "Not committed"
 
-        if DATAHUB_GMS:
-            try:
-                write_generation_metadata(
-                    table_name=table_name,
-                    artifact_path=result["artifact_path"],
-                    prompt=prompt,
-                    commit_hash=commit_hash,
+        # Generation skills that may produce artifacts
+        generation_skills = [
+            "generate_sql",
+            "generate_airflow",
+            "generate_dbt",
+            "generate_yaml",
+            "generate_readme",
+            "generate_terraform",
+            "generate_iam",
+        ]
+
+        for skill_name in generation_skills:
+
+            if skill_name in results:
+
+                generation_result = results[skill_name]
+
+                if isinstance(generation_result, dict):
+
+                    artifact_path = generation_result.get(
+                        "artifact_path"
+                    )
+
+                    iam_path = generation_result.get(
+                        "iam_path",
+                        iam_path
+                    )
+
+                    generation_validation = generation_result.get(
+                        "validation"
+                    )
+
+                    if generation_validation:
+                        validation = generation_validation
+
+                break
+
+        # --------------------------------------------------
+        # Get validation result from validate skill
+        # --------------------------------------------------
+
+        if "validate" in results:
+
+            validate_result = results["validate"]
+
+            if isinstance(validate_result, dict):
+
+                validation = {
+                    "status": validate_result.get(
+                        "validation",
+                        validate_result.get(
+                            "status",
+                            "unknown"
+                        )
+                    ),
+                    "details": validate_result.get(
+                        "details",
+                        ""
+                    )
+                }
+
+                if not artifact_path:
+                    artifact_path = validate_result.get(
+                        "artifact_path"
+                    )
+
+        # --------------------------------------------------
+        # Get Git commit result
+        # --------------------------------------------------
+
+        if "git_commit" in results:
+
+            git_result = results["git_commit"]
+
+            if isinstance(git_result, dict):
+
+                commit_hash = git_result.get(
+                    "commit",
+                    "Not committed"
                 )
-            except Exception as e:
-                print(f"DataHub writeback skipped: {e}")
-        else:
-            print("Skipping DataHub writeback (DATAHUB_GMS not configured).")
-
-        print(f"Writeback: {time.time() - start:.2f}s")
 
         # --------------------------------------------------
-        # Return Response
+        # Get download result
+        # --------------------------------------------------
+
+        if "download_artifacts" in results:
+
+            download_result = results[
+                "download_artifacts"
+            ]
+
+            if isinstance(download_result, dict):
+
+                artifacts = download_result.get(
+                    "artifacts",
+                    []
+                )
+
+                if artifacts and not artifact_path:
+                    artifact_path = artifacts[0]
+
+        # --------------------------------------------------
+        # Safety check
+        # --------------------------------------------------
+
+        if not artifact_path:
+
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "message": "Agent executed successfully but no artifact was returned.",
+                    "plan": [
+                        {
+                            "skill": step.skill.value,
+                            "reason": step.reason
+                        }
+                        for step in plan.steps
+                    ],
+                    "results": results,
+                }
+            )
+
+        # --------------------------------------------------
+        # Return API response
         # --------------------------------------------------
 
         return GenerateResponse(
             status="success",
-            artifact=result["artifact_path"],
-            security_policy=result["iam_path"],
-            validation=result["validation"],
+            artifact=artifact_path,
+            security_policy=iam_path,
+            validation=validation,
             commit=commit_hash,
+            plan=[
+                {
+                    "skill": step.skill.value,
+                    "reason": step.reason,
+                }
+                for step in plan.steps
+            ],
+            execution_results=results,
         )
 
     except HTTPException:
         raise
 
     except Exception as e:
+
+        print("\n========== AGENT ERROR ==========")
+        print(str(e))
+        print("=================================\n")
 
         raise HTTPException(
             status_code=500,

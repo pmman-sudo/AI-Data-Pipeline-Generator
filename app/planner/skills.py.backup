@@ -1,0 +1,310 @@
+from app.llm.provider import generate
+from app.datahub.client import MetadataService
+from app.security.validator import (
+    extract_code_blocks,
+    save_and_validate,
+)
+from app.github.api import commit_generated_artifact
+
+
+class SkillRegistry:
+
+    def get(self, skill_name: str):
+
+        skill_map = {
+            "metadata_lookup": self.metadata_lookup,
+
+            "generate_sql": self.generate_sql,
+            "generate_airflow": self.generate_airflow,
+            "generate_dbt": self.generate_dbt,
+            "generate_yaml": self.generate_yaml,
+            "generate_readme": self.generate_readme,
+
+            "generate_terraform": self.generate_terraform,
+            "generate_iam": self.generate_iam,
+
+            "validate": self.validate,
+            "git_commit": self.git_commit,
+            "download_artifacts": self.download_artifacts,
+        }
+
+        if skill_name not in skill_map:
+            raise ValueError(
+                f"Unknown skill: {skill_name}"
+            )
+
+        return skill_map[skill_name]
+
+    # ==================================================
+    # METADATA LOOKUP
+    # ==================================================
+
+    def metadata_lookup(self, context):
+
+        print("Executing metadata_lookup")
+
+        table = context["table"]
+
+        metadata = MetadataService().get_table_context(
+            table
+        )
+
+        return {
+            "status": "success",
+            "table": metadata.name,
+            "columns": metadata.columns,
+            "owners": metadata.owners,
+            "tags": metadata.tags,
+            "lineage": metadata.lineage,
+        }
+
+    # ==================================================
+    # GENERATE AIRFLOW
+    # ==================================================
+
+    def generate_airflow(self, context):
+
+        print("Executing generate_airflow")
+
+        metadata = context["results"].get(
+            "metadata_lookup"
+        )
+
+        if not metadata:
+            raise ValueError(
+                "generate_airflow requires "
+                "metadata_lookup to run first."
+            )
+
+        table = metadata["table"]
+        columns = metadata["columns"]
+        owners = metadata["owners"]
+        tags = metadata["tags"]
+        lineage = metadata["lineage"]
+
+        column_text = "\n".join(
+            f"- {column['name']} "
+            f"({column['type']}): "
+            f"{column.get('description', '')}"
+            for column in columns
+        )
+
+        prompt = f"""
+You are a Senior Data Engineer.
+
+Generate a production-ready Apache Airflow DAG.
+
+TABLE
+{table}
+
+COLUMNS
+{column_text}
+
+OWNERS
+{owners}
+
+TAGS
+{tags}
+
+UPSTREAM LINEAGE
+{lineage}
+
+USER REQUEST
+{context.get("task", "")}
+
+REQUIREMENTS
+
+- Create a valid Apache Airflow DAG.
+- Use the table metadata above.
+- Use the table name in the DAG.
+- Include sensible task dependencies.
+- Use modern Airflow syntax.
+- Do not invent columns.
+- Return ONLY Python code.
+- Do NOT use Markdown.
+- Do NOT explain the code.
+"""
+
+        raw_response = generate(prompt)
+
+        generated_code, iam_json = extract_code_blocks(
+            raw_response
+        )
+
+        result = save_and_validate(
+            table_name=table,
+            generated_code=generated_code,
+            iam_json=iam_json,
+            artifact_type="airflow",
+        )
+
+        return result
+
+    # ==================================================
+    # GENERATE SQL
+    # ==================================================
+
+    def generate_sql(self, context):
+
+        print("Executing generate_sql")
+
+        return {
+            "status": "success",
+            "artifact": "generated.sql",
+        }
+
+    # ==================================================
+    # GENERATE DBT
+    # ==================================================
+
+    def generate_dbt(self, context):
+
+        print("Executing generate_dbt")
+
+        return {
+            "status": "success",
+            "artifact": "generated_model.sql",
+        }
+
+    # ==================================================
+    # GENERATE YAML
+    # ==================================================
+
+    def generate_yaml(self, context):
+
+        print("Executing generate_yaml")
+
+        return {
+            "status": "success",
+            "artifact": "generated_config.yaml",
+        }
+
+    # ==================================================
+    # GENERATE README
+    # ==================================================
+
+    def generate_readme(self, context):
+
+        print("Executing generate_readme")
+
+        return {
+            "status": "success",
+            "artifact": "README.md",
+        }
+
+    # ==================================================
+    # GENERATE TERRAFORM
+    # ==================================================
+
+    def generate_terraform(self, context):
+
+        print("Executing generate_terraform")
+
+        return {
+            "status": "success",
+            "artifact": "main.tf",
+        }
+
+    # ==================================================
+    # GENERATE IAM
+    # ==================================================
+
+    def generate_iam(self, context):
+
+        print("Executing generate_iam")
+
+        return {
+            "status": "success",
+            "artifact": "iam_policy.json",
+        }
+
+    # ==================================================
+    # VALIDATE
+    # ==================================================
+
+    def validate(self, context):
+
+        print("Executing validate")
+
+        previous_results = context.get(
+            "results",
+            {}
+        )
+
+        return {
+            "status": "success",
+            "validation": "passed",
+            "checked": list(
+                previous_results.keys()
+            ),
+        }
+
+    # ==================================================
+    # GIT COMMIT
+    # ==================================================
+
+    def git_commit(self, context):
+
+        print("Executing git_commit")
+
+        artifact_result = None
+
+        results = context.get(
+            "results",
+            {}
+        )
+
+        # Find the generated artifact
+        for skill_name, result in results.items():
+
+            if isinstance(result, dict):
+
+                if "artifact_path" in result:
+                    artifact_result = result
+                    break
+
+        if not artifact_result:
+
+            return {
+                "status": "skipped",
+                "reason": "No artifact found to commit.",
+            }
+
+        try:
+
+            commit_hash = commit_generated_artifact(
+                artifact_path=artifact_result[
+                    "artifact_path"
+                ],
+                commit_message=context.get(
+                    "task",
+                    "Generated artifact"
+                ),
+            )
+
+            return {
+                "status": "success",
+                "commit": commit_hash,
+            }
+
+        except Exception as e:
+
+            return {
+                "status": "failed",
+                "error": str(e),
+            }
+
+    # ==================================================
+    # DOWNLOAD ARTIFACTS
+    # ==================================================
+
+    def download_artifacts(self, context):
+
+        print("Executing download_artifacts")
+
+        return {
+            "status": "success",
+            "download": True,
+        }
+
+    

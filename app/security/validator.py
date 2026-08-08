@@ -15,7 +15,8 @@ def get_file_routing(table_name: str, artifact_type: str) -> str:
         "dbt": {"ext": "sql", "folder": "dbt"},
         "sql": {"ext": "sql", "folder": "sql"},
         "yaml": {"ext": "yaml", "folder": "configs"},
-        "readme": {"ext": "md", "folder": "configs"}
+        "readme": {"ext": "md", "folder": "configs"},
+        "terraform": {"ext": "tf", "folder": "terraform"},
     }
 
     mapping = routing_map.get(
@@ -203,6 +204,19 @@ def validate_artifact(
         # 6. Markdown files do not require syntax validation
         elif artifact_type == "readme":
             pass
+
+        # 7. Basic Terraform validation
+        elif artifact_type == "terraform":
+
+            if (
+                "resource" not in code_string
+                and "terraform" not in code_string
+            ):
+                raise ValueError(
+                    "Generated Terraform does not appear to contain "
+                    "Terraform configuration."
+                )
+
 
     except Exception as e:
 

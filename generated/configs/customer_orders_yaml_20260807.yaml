@@ -1,0 +1,50 @@
+pipeline:
+  name: customer_orders_pipeline
+  description: Data pipeline for customer orders
+  owners:
+    - Demo
+  tags:
+    - Demo
+  tables:
+    - name: customer_orders
+      columns:
+        - name: user_id
+          type: BIGINT
+          description: Primary key
+        - name: created_at
+          type: TIMESTAMP
+          description: Record creation timestamp
+        - name: email
+          type: STRING
+          description: User email address
+      upstream_lineage: []
+  tasks:
+    - name: extract_data
+      type: extraction
+      description: Extract data from source
+      config:
+        query: SELECT * FROM customer_orders
+    - name: transform_data
+      type: transformation
+      description: Transform extracted data
+      config:
+        script: transform_customer_orders.py
+    - name: load_data
+      type: loading
+      description: Load transformed data into target
+      config:
+        target_table: customer_orders
+        target_schema: public
+  schedule:
+    cron: 0 0 * * *
+    timeout: 60
+    retries: 3
+  notifications:
+    - type: email
+      recipients:
+        - demo@example.com
+      trigger: on_failure
+  metadata:
+    table_name: customer_orders
+    database: production_db
+    schema: public

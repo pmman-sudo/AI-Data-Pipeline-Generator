@@ -1,58 +1,52 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.providers.amazon.aws.operators.redshift import RedshiftSQLOperator
-import logging
+from airflow.operators.bash_operator import BashOperator
+from airflow.operators.python_operator import PythonOperator
 
 default_args = {
     'owner': 'Demo',
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 3,
+    'retries': 1,
     'retry_delay': timedelta(minutes=5),
 }
 
-def load_customer_orders(**kwargs):
-    """Loads customer orders into Redshift"""
-    try:
-        logging.info('Loading customer orders')
-        # TO DO: implement the logic to load customer orders
-    except Exception as e:
-        logging.error(f'Failed to load customer orders: {str(e)}')
-        raise
+def extract_data(**kwargs):
+    print("Extracting data from customer_orders")
 
-dag = DAG(
+def transform_data(**kwargs):
+    print("Transforming data from customer_orders")
+
+def load_data(**kwargs):
+    print("Loading data into customer_orders")
+
+with DAG(
     'customer_orders_dag',
     default_args=default_args,
-    description='A DAG to load customer orders',
+    description='A DAG for customer_orders',
     schedule_interval=timedelta(days=1),
-    start_date=datetime(2023, 12, 1),
+    start_date=datetime(2023, 1, 1),
     tags=['Demo'],
-)
+) as dag:
+    extract = PythonOperator(
+        task_id='extract_data',
+        python_callable=extract_data,
+    )
 
-load_customer_orders_task = PythonOperator(
-    task_id='load_customer_orders',
-    python_callable=load_customer_orders,
-    dag=dag,
-)
+    transform = PythonOperator(
+        task_id='transform_data',
+        python_callable=transform_data,
+    )
 
-create_customer_orders_table = RedshiftSQLOperator(
-    task_id='create_customer_orders_table',
-    sql='''
-        CREATE TABLE IF NOT EXISTS customer_orders (
-            user_id BIGINT,
-            created_at TIMESTAMP,
-            email STRING
-        );
-    ''',
-    dag=dag,
-)
+    load = PythonOperator(
+        task_id='load_data',
+        python_callable=load_data,
+    )
 
-end_task = DummyOperator(
-    task_id='end_task',
-    trigger_rule='all_done',
-    dag=dag,
-)
+    end_task = BashOperator(
+        task_id='end_task',
+        bash_command='echo "DAG finished"',
+    )
 
-create_customer_orders_table >> load_customer_orders_task >> end_task
+    extract >> transform >> load >> end_task

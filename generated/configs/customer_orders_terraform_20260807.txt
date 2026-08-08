@@ -1,0 +1,151 @@
+# File: main.tf
+provider "aws" {
+  region = var.region
+}
+
+resource "aws_rds_cluster" "customer_orders" {
+  cluster_identifier = "customer-orders-cluster"
+  engine_mode        = "serverless"
+  engine              = "aurora-postgresql"
+  database_name       = "customer_orders"
+  master_username    = var.db_username
+  master_password     = var.db_password
+  vpc_security_group_ids = [aws_security_group.customer_orders.id]
+  db_subnet_group_name    = aws_db_subnet_group.customer_orders.name
+  skip_final_snapshot     = true
+  tags = {
+    Owner = "Demo"
+    Tags  = "Demo"
+  }
+}
+
+resource "aws_db_subnet_group" "customer_orders" {
+  name       = "customer-orders-subnet-group"
+  subnet_ids = var.subnet_ids
+  tags = {
+    Owner = "Demo"
+    Tags  = "Demo"
+  }
+}
+
+resource "aws_security_group" "customer_orders" {
+  name        = "customer-orders-sg"
+  description = "Security group for customer orders database"
+  vpc_id      = var.vpc_id
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = {
+    Owner = "Demo"
+    Tags  = "Demo"
+  }
+}
+
+resource "aws_rds_cluster_instance" "customer_orders" {
+  cluster_identifier = aws_rds_cluster.customer_orders.cluster_identifier
+  instance_class     = var.instance_class
+  engine              = aws_rds_cluster.customer_orders.engine
+  db_subnet_group_name = aws_db_subnet_group.customer_orders.name
+}
+
+resource "aws_s3_bucket" "customer_orders_backup" {
+  bucket = "customer-orders-backup"
+  acl    = "private"
+  versioning {
+    enabled = true
+  }
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+  tags = {
+    Owner = "Demo"
+    Tags  = "Demo"
+  }
+}
+
+# File: variables.tf
+variable "region" {
+  type        = string
+  description = "AWS region"
+}
+
+variable "db_username" {
+  type        = string
+  description = "Database username"
+  sensitive   = true
+}
+
+variable "db_password" {
+  type        = string
+  description = "Database password"
+  sensitive   = true
+}
+
+variable "subnet_ids" {
+  type        = list(string)
+  description = "List of subnet IDs"
+}
+
+variable "vpc_id" {
+  type        = string
+  description = "VPC ID"
+}
+
+variable "instance_class" {
+  type        = string
+  description = "Instance class"
+}
+
+# File: outputs.tf
+output "database_name" {
+  value       = aws_rds_cluster.customer_orders.database_name
+  description = "Database name"
+}
+
+output "database_endpoint" {
+  value       = aws_rds_cluster.customer_orders.endpoint
+  description = "Database endpoint"
+}
+
+output "database_username" {
+  value       = aws_rds_cluster.customer_orders.master_username
+  description = "Database username"
+  sensitive   = true
+}
+
+output "database_password" {
+  value       = aws_rds_cluster.customer_orders.master_password
+  description = "Database password"
+  sensitive   = true
+}
+
+# File: terraform.tf
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 3.50.0"
+    }
+  }
+}
+
+# File: customer_orders.sql
+CREATE TABLE customer_orders (
+  user_id BIGINT PRIMARY KEY,
+  created_at TIMESTAMP,
+  email STRING
+);
