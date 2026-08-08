@@ -1,110 +1,77 @@
 terraform
-variable "db_username" {
+variable "database_name" {
+  type        = string
+  description = "Name of the database"
+}
+
+variable "database_username" {
+  type        = string
+  description = "Username for database connection"
+}
+
+variable "database_password" {
   type        = string
   sensitive   = true
+  description = "Password for database connection"
 }
 
-variable "db_password" {
+variable "database_host" {
   type        = string
-  sensitive   = true
+  description = "Host for database connection"
 }
 
-variable "db_host" {
-  type        = string
-}
-
-variable "db_port" {
+variable "database_port" {
   type        = number
-}
-
-variable "db_name" {
-  type        = string
-}
-
-variable "environment" {
-  type        = string
+  description = "Port for database connection"
 }
 
 variable "owners" {
   type        = list(string)
   default     = ["Paul"]
+  description = "List of owners for the table"
 }
 
-resource "aws_db_instance" "fct_users_created_db" {
-  identifier        = "fct-users-created-db"
-  instance_class    = "db.t2.micro"
-  engine             = "postgres"
-  username           = var.db_username
-  password           = var.db_password
-  port              = var.db_port
-  dbname             = var.db_name
-  vpc_security_group_ids = [aws_security_group.fct_users_created_db_sg.id]
-  publicly_accessible = false
+variable "tags" {
+  type        = list(string)
+  default     = []
+  description = "List of tags for the table"
 }
 
-resource "aws_db_subnet_group" "fct_users_created_db_subnet_group" {
-  name       = "fct-users-created-db-subnet-group"
-  subnet_ids = [aws_subnet.fct_users_created_db_subnet.id]
+provider "postgres" {
+  host     = var.database_host
+  port     = var.database_port
+  username = var.database_username
+  password = var.database_password
+  database = var.database_name
 }
 
-resource "aws_subnet" "fct_users_created_db_subnet" {
-  cidr_block = "10.0.1.0/24"
-  vpc_id     = aws_vpc.fct_users_created_vpc.id
-  availability_zone = "us-east-1a"
+resource "postgres_schema" "public" {
+  name  = "public"
+  owner = var.database_username
 }
 
-resource "aws_vpc" "fct_users_created_vpc" {
-  cidr_block = "10.0.0.0/16"
+resource "postgres_table" "fct_users_created" {
+  name        = "fct_users_created"
+  schema     = postgres_schema.public.name
+  owner      = var.database_username
+  depends_on = [postgres_schema.public]
 }
 
-resource "aws_security_group" "fct_users_created_db_sg" {
-  name        = "fct-users-created-db-sg"
-  vpc_id      = aws_vpc.fct_users_created_vpc.id
-  ingress {
-    from_port   = var.db_port
-    to_port     = var.db_port
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "postgres_column" "id" {
+  table = postgres_table.fct_users_created.name
+  schema = postgres_schema.public.name
+  name   = "id"
+  type   = "integer"
 }
 
-resource "postgresql_database" "fct_users_created_db" {
-  name  = var.db_name
-  owner = "postgres"
+output "table_name" {
+  value = postgres_table.fct_users_created.name
 }
 
-resource "postgresql_table" "fct_users_created" {
-  database = postgresql_database.fct_users_created_db.name
-  name     = "fct_users_created"
-  owner    = "postgres"
-  table    = "fct_users_created"
-
-  column {
-    name = "id"
-    type = "integer"
-  }
+output "table_schema" {
+  value = postgres_schema.public.name
 }
 
-output "db_instance_arn" {
-  value = aws_db_instance.fct_users_created_db.arn
-}
-
-output "db_instance_endpoint" {
-  value = aws_db_instance.fct_users_created_db.endpoint
-}
-
-output "db_instance_username" {
-  value = var.db_username
-  sensitive = true
-}
-
-output "db_instance_password" {
-  value = var.db_password
-  sensitive = true
+output "table_owner" {
+  value = var.owners
 }

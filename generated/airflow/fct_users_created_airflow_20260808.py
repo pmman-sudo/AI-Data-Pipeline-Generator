@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.dummy import DummyOperator
-from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
 
 default_args = {
     'owner': 'Paul',
@@ -9,32 +9,34 @@ default_args = {
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,
-    'retry_delay': timedelta(minutes=5)
+    'retry_delay': timedelta(minutes=5),
 }
-
-def create_fct_users_created(**kwargs):
-    # TO DO: implement data creation logic for fct_users_created table
-    pass
 
 with DAG(
     'fct_users_created_dag',
     default_args=default_args,
-    description='A DAG for creating the fct_users_created table',
-    schedule_interval=timedelta(days=1),
-    start_date=datetime(2023, 12, 1),
-    tags=[]
+    description='DAG for fct_users_created table',
+    schedule_interval=None,
+    start_date=datetime(2023, 1, 1),
+    catchup=False,
+    tags=[],
 ) as dag:
     start_task = DummyOperator(
-        task_id='start_task'
+        task_id='start_task',
     )
 
-    create_fct_users_created_task = PythonOperator(
-        task_id='create_fct_users_created',
-        python_callable=create_fct_users_created
+    create_fct_users_created_table = BashOperator(
+        task_id='create_fct_users_created_table',
+        bash_command='echo "Create fct_users_created table"'
+    )
+
+    load_fct_users_created_data = BashOperator(
+        task_id='load_fct_users_created_data',
+        bash_command='echo "Load data into fct_users_created table"'
     )
 
     end_task = DummyOperator(
-        task_id='end_task'
+        task_id='end_task',
     )
 
-    start_task >> create_fct_users_created_task >> end_task
+    start_task >> create_fct_users_created_table >> load_fct_users_created_data >> end_task
