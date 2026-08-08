@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.dummy import DummyOperator
-from airflow.operators.bash import BashOperator
+from airflow.operators.bash_operator import BashOperator
+from airflow.operators.python_operator import PythonOperator
 
 default_args = {
     'owner': 'Paul',
@@ -12,36 +12,38 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
 }
 
+def check_table_exists(**kwargs):
+    import pandas as pd
+    from sqlalchemy import create_engine
+    engine = create_engine('postgresql://user:password@host:port/dbname')
+    query = "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name='fct_users_created');"
+    result = pd.read_sql_query(query, engine)
+    if result.iloc[0][0]:
+        return True
+    else:
+        raise ValueError("Table fct_users_created does not exist")
+
+def load_data(**kwargs):
+    from sqlalchemy import create_engine
+    engine = create_engine('postgresql://user:password@host:port/dbname')
+    query = "INSERT INTO fct_users_created (id) SELECT id FROM src_users;"
+    engine.execute(query)
+
 with DAG(
     'fct_users_created_dag',
     default_args=default_args,
     description='A DAG for the fct_users_created table',
     schedule_interval=timedelta(days=1),
-    start_date=datetime(2023, 12, 1),
+    start_date=datetime(2023, 1, 1),
+    catchup=False,
     tags=[],
 ) as dag:
-    start_task = DummyOperator(
-        task_id='start_task',
+    check_table = PythonOperator(
+        task_id='check_table',
+        python_callable=check_table_exists,
     )
-
-    end_task = DummyOperator(
-        task_id='end_task',
+    load_data_task = PythonOperator(
+        task_id='load_data',
+        python_callable=load_data,
     )
-
-    create_fct_users_created_table = BashOperator(
-        task_id='create_fct_users_created_table',
-        bash_command='''
-            echo "Creating fct_users_created table"
-            # Add SQL command to create table here
-        ''',
-    )
-
-    populate_fct_users_created_table = BashOperator(
-        task_id='populate_fct_users_created_table',
-        bash_command='''
-            echo "Populating fct_users_created table"
-            # Add SQL command to populate table here
-        ''',
-    )
-
-    start_task >> create_fct_users_created_table >> populate_fct_users_created_table >> end_task
+    check_table >> load_data_task
