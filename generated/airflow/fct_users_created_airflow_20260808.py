@@ -24,18 +24,24 @@ with DAG(
         task_id='start_task',
     )
 
-    create_fct_users_created_table = BashOperator(
-        task_id='create_fct_users_created_table',
-        bash_command='echo "Creating fct_users_created table..."',
-    )
-
-    load_fct_users_created_data = BashOperator(
-        task_id='load_fct_users_created_data',
-        bash_command='echo "Loading data into fct_users_created table..."',
-    )
-
     end_task = DummyOperator(
         task_id='end_task',
     )
 
-    start_task >> create_fct_users_created_table >> load_fct_users_created_data >> end_task
+    create_fct_users_created_table = BashOperator(
+        task_id='create_fct_users_created_table',
+        bash_command='''
+            echo "Creating fct_users_created table"
+            # Add SQL command to create table here
+        ''',
+    )
+
+    populate_fct_users_created_table = BashOperator(
+        task_id='populate_fct_users_created_table',
+        bash_command='''
+            echo "Populating fct_users_created table"
+            # Add SQL command to populate table here
+        ''',
+    )
+
+    start_task >> create_fct_users_created_table >> populate_fct_users_created_table >> end_task
