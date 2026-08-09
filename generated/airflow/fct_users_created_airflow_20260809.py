@@ -12,39 +12,46 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
 }
 
-def load_fct_users_created(**kwargs):
-    # Load fct_users_created table
-    print("Loading fct_users_created table")
+def load_data(**kwargs):
+    # Load data into fct_users_created table
+    # Replace this function with actual data loading logic
+    pass
 
-def transform_fct_users_created(**kwargs):
-    # Transform fct_users_created table
-    print("Transforming fct_users_created table")
+def transform_data(**kwargs):
+    # Transform data in fct_users_created table
+    # Replace this function with actual data transformation logic
+    pass
 
-def validate_fct_users_created(**kwargs):
-    # Validate fct_users_created table
-    print("Validating fct_users_created table")
+def validate_data(**kwargs):
+    # Validate data in fct_users_created table
+    # Replace this function with actual data validation logic
+    pass
 
-with DAG(
+dag = DAG(
     'fct_users_created_dag',
     default_args=default_args,
-    description='fct_users_created DAG',
+    description='A DAG for the fct_users_created table',
     schedule_interval=timedelta(days=1),
-    start_date=datetime(2022, 1, 1),
+    start_date=datetime(2023, 1, 1),
     tags=[],
-) as dag:
-    load_fct_users_created_task = PythonOperator(
-        task_id='load_fct_users_created',
-        python_callable=load_fct_users_created,
-    )
+)
 
-    transform_fct_users_created_task = PythonOperator(
-        task_id='transform_fct_users_created',
-        python_callable=transform_fct_users_created,
-    )
+load_data_task = PythonOperator(
+    task_id='load_data',
+    python_callable=load_data,
+    dag=dag,
+)
 
-    validate_fct_users_created_task = PythonOperator(
-        task_id='validate_fct_users_created',
-        python_callable=validate_fct_users_created,
-    )
+transform_data_task = PythonOperator(
+    task_id='transform_data',
+    python_callable=transform_data,
+    dag=dag,
+)
 
-    load_fct_users_created_task >> transform_fct_users_created_task >> validate_fct_users_created_task
+validate_data_task = PythonOperator(
+    task_id='validate_data',
+    python_callable=validate_data,
+    dag=dag,
+)
+
+load_data_task >> transform_data_task >> validate_data_task
