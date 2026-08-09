@@ -205,18 +205,43 @@ def validate_artifact(
         elif artifact_type == "readme":
             pass
 
-        # 7. Basic Terraform validation
+        # 7. Terraform validation
         elif artifact_type == "terraform":
 
-            if (
-                "resource" not in code_string
-                and "terraform" not in code_string
+            has_terraform_block = bool(
+                re.search(r"\bterraform\s*\{", code_string)
+            )
+
+            has_resource_block = bool(
+                re.search(
+                    r'\bresource\s+"[^"]+"\s+"[^"]+"\s*\{',
+                    code_string
+                )
+            )
+
+            has_module_block = bool(
+                re.search(
+                    r'\bmodule\s+"[^"]+"\s*\{',
+                    code_string
+                )
+            )
+
+            has_data_block = bool(
+                re.search(
+                    r'\bdata\s+"[^"]+"\s+"[^"]+"\s*\{',
+                    code_string
+                )
+            )
+
+            if not (
+                has_resource_block
+                or has_module_block
+                or has_data_block
             ):
                 raise ValueError(
-                    "Generated Terraform does not appear to contain "
-                    "Terraform configuration."
+                    "Generated Terraform does not contain a "
+                    "resource, module, or data block."
                 )
-
 
     except Exception as e:
 
