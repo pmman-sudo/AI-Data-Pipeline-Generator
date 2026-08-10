@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 from airflow import DAG
+from airflow.operators.dummy import DummyOperator
 from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.providers.postgres.sensors.postgres import PostgresSensor
 
 default_args = {
     'owner': 'Demo',
@@ -13,48 +14,50 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
 }
 
-def check_table():
-    import psycopg2
-    conn = psycopg2.connect(
-        host="localhost",
-        database="database",
-        user="user",
-        password="password"
-    )
-    cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) FROM fct_users_created")
-    result = cur.fetchone()
-    print(f"Number of rows in fct_users_created: {result[0]}")
-    conn.close()
-
 with DAG(
-    'fct_users_created_dag',
+    'fct_users_created_pipeline',
     default_args=default_args,
-    description='A DAG to interact with the fct_users_created table',
+    description='Pipeline for fct_users_created table',
     schedule_interval=timedelta(days=1),
-    start_date=datetime(2023, 12, 1),
+    start_date=datetime(2023, 1, 1),
     tags=['Demo'],
 ) as dag:
-    task1 = PostgresOperator(
-        task_id='create_table_if_not_exists',
-        conn_id='postgres_default',
+
+    start_task = DummyOperator(
+        task_id='start_task',
+    )
+
+    check_table_exists = PostgresSensor(
+        task_id='check_table_exists',
+        conn_id='postgres_conn',
+        sql='SELECT EXISTS(SELECT 1 FROM pg_tables WHERE tablename = \'fct_users_created\')',
+        timeout=18*60*60,  # 18 hours
+        poke_interval=60,  # 1 minute
+    )
+
+    create_table = PostgresOperator(
+        task_id='create_table',
+        conn_id='postgres_conn',
         sql='''
             CREATE TABLE IF NOT EXISTS fct_users_created (
                 user_id BIGINT PRIMARY KEY,
                 created_at TIMESTAMP,
                 email STRING
-            )
-        '''
+            );
+        ''',
     )
 
-    task2 = BashOperator(
-        task_id='print_table_name',
-        bash_command='echo "fct_users_created"'
+    insert_data = PostgresOperator(
+        task_id='insert_data',
+        conn_id='postgres_conn',
+        sql='''
+            INSERT INTO fct_users_created (user_id, created_at, email)
+            VALUES (1, NOW(), 'example@example.com');
+        ''',
     )
 
-    task3 = PythonOperator(
-        task_id='check_table',
-        python_callable=check_table
+    end_task = DummyOperator(
+        task_id='end_task',
     )
 
-    task1 >> task2 >> task3
+    start_task >> check_table_exists >> create_table >> insert_data >> end_task
