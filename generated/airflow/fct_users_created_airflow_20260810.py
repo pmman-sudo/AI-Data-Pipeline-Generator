@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.empty import EmptyOperator
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
@@ -11,62 +10,59 @@ default_args = {
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,
-    'retry_delay': timedelta(minutes=5),
+    'retry_delay': timedelta(minutes=5)
 }
 
-def validate_data(**kwargs):
-    # Validate the data
-    print("Validating data...")
+def validate_data():
+    # Implement data validation logic here
+    return True
 
 def load_data(**kwargs):
-    # Load the data
-    print("Loading data...")
+    # Implement data loading logic here
+    return True
 
 def transform_data(**kwargs):
-    # Transform the data
-    print("Transforming data...")
+    # Implement data transformation logic here
+    return True
 
-with DAG(
+dag = DAG(
     'fct_users_created_dag',
     default_args=default_args,
-    description='A DAG to load, transform, and validate the fct_users_created table',
+    description='fct_users_created DAG',
     schedule_interval=timedelta(days=1),
-    start_date=datetime(2022, 1, 1),
-    tags=['Demo'],
-) as dag:
-    start = EmptyOperator(
-        task_id='start',
-    )
+    start_date=datetime(2023, 1, 1),
+    tags=['Demo']
+)
 
-    load = BashOperator(
-        task_id='load_data',
-        bash_command='echo "Loading data..."',
-    )
+load_task = BashOperator(
+    task_id='load_fct_users_created',
+    bash_command='echo "Loading fct_users_created data..."',
+    dag=dag
+)
 
-    transform = BashOperator(
-        task_id='transform_data',
-        bash_command='echo "Transforming data..."',
-    )
+transform_task = BashOperator(
+    task_id='transform_fct_users_created',
+    bash_command='echo "Transforming fct_users_created data..."',
+    dag=dag
+)
 
-    validate = PythonOperator(
-        task_id='validate_data',
-        python_callable=validate_data,
-    )
+validate_task = PythonOperator(
+    task_id='validate_fct_users_created',
+    python_callable=validate_data,
+    dag=dag
+)
 
-    spark_task = SparkSubmitOperator(
-        task_id='spark_task',
-        conn_id='spark_default',
-        application='/path/to/your/spark/application.py',
-        jars=['/path/to/your/jar1.jar', '/path/to/your/jar2.jar'],
-        application_args=['arg1', 'arg2'],
-        driver_classpath=['/path/to/your/driver/classpath'],
-        spark_binary='/path/to/your/spark/binary',
-        conf={'key': 'value'},
-        verbose=True,
-    )
+commit_task = BashOperator(
+    task_id='commit_fct_users_created',
+    bash_command='echo "Committing fct_users_created data to GitHub..."',
+    dag=dag
+)
 
-    end = EmptyOperator(
-        task_id='end',
-    )
+download_task = BashOperator(
+    task_id='prepare_fct_users_created_for_download',
+    bash_command='echo "Preparing fct_users_created data for download..."',
+    dag=dag
+)
 
-    start >> load >> transform >> validate >> spark_task >> end
+load_task >> transform_task >> validate_task
+validate_task >> commit_task >> download_task
