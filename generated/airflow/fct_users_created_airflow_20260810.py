@@ -3,7 +3,7 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.utils.dates import days_ago
 
 default_args = {
     'owner': 'Demo',
@@ -15,65 +15,73 @@ default_args = {
 }
 
 def load_data(**kwargs):
-    postgres_hook = PostgresHook(postgres_conn_id='postgres_default')
-    conn = postgres_hook.get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM fct_users_created")
-    rows = cur.fetchall()
-    return rows
+    import pandas as pd
+    from sqlalchemy import create_engine
+
+    engine = create_engine('postgresql://user:password@host:port/dbname')
+    query = "SELECT * FROM fct_users_created"
+    df = pd.read_sql(query, engine)
+
+    return df
 
 def transform_data(**kwargs):
-    rows = kwargs['ti'].xcom_pull(task_ids='load_data')
-    transformed_rows = []
-    for row in rows:
-        transformed_row = {
-            'user_id': row[0],
-            'created_at': row[1],
-            'email': row[2],
-        }
-        transformed_rows.append(transformed_row)
-    return transformed_rows
+    import pandas as pd
+
+    df = kwargs['task_instance'].xcom_pull(task_ids='load_data')
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    df['email'] = df['email'].str.lower()
+
+    return df
 
 def validate_data(**kwargs):
-    rows = kwargs['ti'].xcom_pull(task_ids='transform_data')
-    for row in rows:
-        if not row['user_id'] or not row['created_at'] or not row['email']:
-            raise ValueError("Invalid data")
+    import pandas as pd
+
+    df = kwargs['task_instance'].xcom_pull(task_ids='transform_data')
+    if df.empty:
+        raise ValueError("Data is empty")
+    if not all(df['user_id'].notna()):
+        raise ValueError("User ID contains null values")
+    if not all(df['created_at'].notna()):
+        raise ValueError("Created at contains null values")
+    if not all(df['email'].notna()):
+        raise ValueError("Email contains null values")
+
+    return True
+
+def commit_to_github(**kwargs):
+    import git
+    from git import Repo
+
+    repo = Repo()
+    repo.index.add(['dags/fct_users_created_dag.py'])
+    repo.index.commit('Added fct_users_created_dag.py')
 
 with DAG(
     'fct_users_created_dag',
     default_args=default_args,
-    description='A DAG to load, transform, and validate fct_users_created data',
+    description='A DAG for the fct_users_created table',
     schedule_interval=timedelta(days=1),
-    start_date=datetime(2022, 1, 1),
+    start_date=days_ago(1),
     tags=['Demo'],
 ) as dag:
     load_data_task = PythonOperator(
         task_id='load_data',
-        python_callable=load_data,
+        python_callable=load_data
     )
 
     transform_data_task = PythonOperator(
         task_id='transform_data',
-        python_callable=transform_data,
+        python_callable=transform_data
     )
 
     validate_data_task = PythonOperator(
         task_id='validate_data',
-        python_callable=validate_data,
+        python_callable=validate_data
     )
 
-    load_data_task >> transform_data_task >> validate_data_task
+    commit_to_github_task = PythonOperator(
+        task_id='commit_to_github',
+        python_callable=commit_to_github
+    )
 
-def validate_dag(dag):
-    try:
-        dag.run_test()
-        return "DAG is valid"
-    except Exception as e:
-        return str(e)
-
-print(validate_dag(dag))
-
-# simulate git commit
-git_commit_message = "Created fct_users_created DAG"
-print(f"Committed to GitHub: {git_commit_message}")
+    load_data_task >> transform_data_task >> validate_data_task >> commit_to_github_task
