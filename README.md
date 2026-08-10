@@ -4,23 +4,6 @@
 
 The AI Data Pipeline Generator is an AI-powered data engineering platform that interprets natural-language objectives, determines the skills required to complete the task, retrieves relevant dataset metadata, generates engineering artifacts, validates the results, and optionally commits them to GitHub.
 
----
-
-## 📦 Generated Artifacts
-
-The agent can generate and validate multiple types of data engineering artifacts depending on the user's request and the execution plan.
-
-| Artifact | Description | Output |
-|---|---|---|
-| 🌬️ Apache Airflow DAG | Workflow orchestration code | `generated/airflow/` |
-| 🗄️ SQL | SQL transformations and queries | `generated/sql/` |
-| 🧩 dbt | dbt models and related artifacts | `generated/dbt/` |
-| 📝 YAML | Pipeline and configuration files | `generated/yaml/` |
-| 📖 README | Generated project documentation | `generated/readme/` |
-| 🏗️ Terraform | Infrastructure-as-Code configurations | `generated/terraform/` |
-| 🔐 IAM Policy | Security policies associated with generated artifacts | `generated/iam_policies/` |
-
-Generated artifacts are validated before the agent reports a successful execution.
 
 ---
 
@@ -39,7 +22,6 @@ Generated artifacts are validated before the agent reports a successful executio
 - [Running the Application](#running-the-application)
 - [API Reference](#api-reference)
 - [Example Usage](#example-usage)
-- [Screenshots](#screenshots)
 - [Project Structure](#project-structure)
 - [Security](#security)
 - [Validation](#validation)
@@ -738,30 +720,20 @@ Ensure the FastAPI server is running before using the frontend.
 Example:
 
 ```
-fct_users_created
+fct_users_created or leave it as the default customer_orders
 ```
 
-2. Select an artifact type.
-
-Available options include:
-
-- Generate Complete Pipeline
-- Airflow DAG
-- SQL
-- dbt
-- YAML
-- README
-
-3. Describe the pipeline to generate.
+2. Describe the pipeline to generate.
 
 Example:
 
 ```
-Generate an Airflow DAG that ingests the
-fct_users_created table every day at midnight.
+Generate a production-ready Apache Airflow DAG for the
+fct_users_created table using the available DataHub metadata.
+Include appropriate load, transformation, and validation stages. Validate the generated artifact, commit it to GitHub if validation passes, and prepare it for download.
 ```
 
-4. Click **Generate Pipeline**.
+3. Click **Execute AI Agent**.
 
 ---
 
@@ -782,24 +754,94 @@ For complete pipeline generation, a downloadable ZIP archive containing all gene
 ### Expected Startup Architecture
 
 ```text
-                    User
-                      │
-                      ▼
-          Streamlit Frontend
-          http://localhost:8501
-                      │
-        HTTP Requests │
-                      ▼
-             FastAPI Backend
-          http://localhost:8000
-                      │
-      ┌───────────────┼────────────────┐
-      ▼               ▼                ▼
-  DataHub         Groq LLM       GitHub API
-      │               │                │
-      └───────────────┼────────────────┘
-                      ▼
-            Generated Artifacts
+                           👤 USER
+                           │
+                           │ Natural-language request
+                           ▼
+                  ┌─────────────────────┐
+                  │  STREAMLIT FRONTEND │
+                  │    Port 8501        │
+                  │                     │
+                  │ • Metadata Explorer │
+                  │ • Agent Interface   │
+                  │ • Results / Download│
+                  └──────────┬──────────┘
+                             │
+                             │ HTTP / JSON
+                             ▼
+                  ┌─────────────────────┐
+                  │   FASTAPI BACKEND   │
+                  │     Port 8000       │
+                  │                     │
+                  │  /generate          │
+                  │  /health            │
+                  │  /schema/{table}    │
+                  └──────────┬──────────┘
+                             │
+                             ▼
+              ┌──────────────────────────────┐
+              │      🧠 AI AGENT CORE        │
+              │                              │
+              │  ┌────────────────────────┐  │
+              │  │       AI PLANNER        │  │
+              │  │                         │  │
+              │  │ Natural Language → Plan │  │
+              │  └───────────┬────────────┘  │
+              │              │               │
+              │              ▼               │
+              │  ┌────────────────────────┐  │
+              │  │       EXECUTOR         │  │
+              │  │                         │  │
+              │  │ Executes skills in     │  │
+              │  │ dependency order       │  │
+              │  └───────────┬────────────┘  │
+              └──────────────┼───────────────┘
+                             │
+             ┌───────────────┼────────────────┐
+             │               │                │
+             ▼               ▼                ▼
+      ┌────────────┐  ┌────────────┐   ┌────────────┐
+      │ DATAHUB    │  │ GROQ LLM   │   │  SKILLS    │
+      │            │  │            │   │            │
+      │ Metadata   │  │ AI         │   │ SQL        │
+      │ Schema     │  │ Generation │   │ Airflow    │
+      │ Lineage    │  │ Planning   │   │ dbt        │
+      │ Owners     │  │            │   │ YAML       │
+      │ Tags       │  │            │   │ Terraform  │
+      └────────────┘  └────────────┘   │ IAM        │
+                                       │ README     │
+                                       └─────┬──────┘
+                                             │
+                                             ▼
+                                  ┌────────────────────┐
+                                  │ 🛡️ VALIDATION       │
+                                  │                    │
+                                  │ Artifact validation│
+                                  │ Security checks    │
+                                  │ Generation checks  │
+                                  └─────────┬──────────┘
+                                            │
+                                ┌───────────┴───────────┐
+                                │                       │
+                                ▼                       ▼
+                       ┌────────────────┐      ┌────────────────┐
+                       │ 📦 ARTIFACTS   │      │ 🔗 GITHUB      │
+                       │                │      │                │
+                       │ Airflow        │      │ Commit         │
+                       │ Terraform     │      │ Versioning     │
+                       │ SQL            │      │ CI/CD          │
+                       │ dbt            │      │                │
+                       │ YAML           │      │                │
+                       │ IAM            │      │                │
+                       └────────────────┘      └────────────────┘
+                                │
+                                ▼
+                       ┌────────────────┐
+                       │ ⬇️ DOWNLOAD    │
+                       │                │
+                       │ Generated      │
+                       │ artifacts      │
+                       └────────────────┘
 ```
 
 ---
@@ -928,373 +970,215 @@ GET /schema/{table_name}
 
 ## Example Usage
 
-The following example demonstrates a complete workflow using the AI Data Pipeline Generator.
+The AI Data Pipeline Generator provides an autonomous workflow for generating and validating data-engineering artifacts from natural-language requests.
+
+Instead of manually selecting individual pipeline tools, the user describes the desired outcome and the AI agent determines which skills are required.
 
 ---
 
 ### Scenario
 
-A data engineer wants to generate a production-ready Airflow pipeline for the `fct_users_created` dataset stored in DataHub.
+A data engineer wants to generate an Airflow DAG for the `fct_users_created` dataset.
+
+The dataset metadata is available through DataHub.
 
 ---
 
-### Step 1 — Enter Dataset
+### Step 1 — Connect to the Application
 
-In the **Metadata Explorer**, specify the DataHub table.
+Start the AI Data Pipeline Generator and open the Streamlit interface.
 
-```
+The application displays the current backend status and the available agent capabilities, including:
+
+- Metadata Lookup
+- SQL Generation
+- Airflow Generation
+- dbt Generation
+- YAML Generation
+- README Generation
+- Terraform Generation
+- IAM Generation
+- Artifact Validation
+- Git Commit
+- Artifact Download
+
+The user does not need to manually select a pipeline technology.
+
+---
+
+### Step 2 — Explore Dataset Metadata
+
+In the **Metadata Explorer**, enter the DataHub table name:
+
+```text
 fct_users_created
 ```
 
-Click **Preview Metadata** to retrieve the dataset schema.
-
-The application displays:
+The application can retrieve metadata associated with the dataset, including:
 
 - Column definitions
 - Dataset owners
 - Tags
-- Lineage information
+- Upstream lineage
 
----
+This metadata provides context for downstream artifact generation.
 
-### Step 2 — Select Artifact Type
+### Step 3 — Describe the Objective
 
-Choose the desired output.
+In the AI Data Pipeline Agent section, describe what should be generated.
 
-```
-Generate Complete Pipeline
-```
+For example:
 
-This generates:
+Generate a production-ready Airflow DAG for the fct_users_created table.
+Run the workflow daily, include appropriate task dependencies,
+retries, validation, and production-oriented best practices.
+Commit the generated artifact to GitHub and prepare it for download.
 
-- Airflow DAG
-- SQL
-- dbt model
-- YAML configuration
-- README
-- IAM Policy
-- Validation report
-- ZIP package
+### Step 4 — Autonomous Agent Planning
 
----
+The planning agent analyzes the request and creates an execution plan.
 
-### Step 3 — Enter Prompt
+For the example above, the agent may determine that the following workflow is required:
 
-Example prompt:
+1. Metadata Lookup
+        ↓
+2. Generate Airflow DAG
+        ↓
+3. Validate Artifact
+        ↓
+4. Commit to Git
+        ↓
+5. Prepare Download
 
-```text
-Generate a production-ready Airflow DAG that ingests the
-fct_users_created table every day at midnight.
+The exact execution plan depends on the user's request.
 
-Include retries, logging, monitoring,
-and best practices for production deployment.
-```
+For example, if the user does not request a Git commit, the Git commit step is omitted.
 
----
 
-### Step 4 — Generate Pipeline
+### Step 5 — Metadata Lookup
 
-Click:
+The agent retrieves the required dataset metadata from DataHub.
 
-```
-🚀 Generate Pipeline
-```
+The metadata is passed into the relevant generation skill so that the generated artifact can be informed by the dataset context.
 
-The backend performs the following operations:
+For example:
 
-1. Retrieves metadata from DataHub.
-2. Constructs a metadata-aware prompt.
-3. Sends the prompt to the Groq LLM.
-4. Validates generated artifacts.
-5. Generates an IAM security policy.
-6. Packages the artifacts.
-7. Uploads the artifacts to GitHub (if enabled).
+Table:
+fct_users_created
 
----
+Columns:
+- id
+- ...
 
-### Example Response
+Owners:
+- Paul
 
-```text
-✅ Pipeline generated successfully
+Tags:
+- ...
 
-Generated Artifact
-generated/fct_users_created_pipeline.zip
+Lineage:
+- ...
+
+### Step 6 — Generate the Artifact
+
+The agent executes the appropriate generation skill.
+
+For an Airflow request, the Generate Airflow skill:
+
+1. Retrieves the dataset metadata.
+2. Constructs a metadata-aware generation prompt.
+3. Sends the request to the configured LLM provider.
+4. Extracts the generated code.
+5. Saves the artifact.
+6. Generates the associated IAM policy.
+7. Passes the artifact to the validation system.
+
+### Step 7 — Artifact Validation
+
+Generated artifacts are automatically passed through the validation system.
+
+For example:
 
 Validation
+
 PASS
 
-Git Commit
-430c9a4
-```
+Validation successful
 
----
+### Step 8 — Optional GitHub Commit
 
-### Example Generated Artifacts
+If the user requests a Git commit, the agent executes the Git commit skill after successful validation
 
-```text
-generated/
 
-├── airflow/
-│   └── fct_users_created_dag.py
-│
-├── sql/
-│   └── fct_users_created.sql
-│
-├── dbt/
-│   └── fct_users_created.sql
-│
-├── yaml/
-│   └── pipeline.yaml
-│
-├── readme/
-│   └── README.md
-│
-├── iam_policies/
-│   └── fct_users_created_policy.json
-│
-├── validation/
-│   └── validation.json
-│
-└── fct_users_created_pipeline.zip
-```
 
----
+Example Prompts
 
-### Example Validation Output
+The autonomous agent accepts natural-language requests.
 
-```json
-{
-  "status": "pass",
-  "details": "5 artifacts generated successfully."
-}
-```
+- Generate an Airflow DAG
 
----
+Generate a production-ready Airflow DAG for the fct_users_created table.
+Run it daily and include sensible task dependencies, retries,
+logging, validation, and production-oriented best practices.
 
-### Example GitHub Commit
 
-```text
-430c9a4
-```
+- Generate SQL
 
-The generated artifacts are committed directly to the configured GitHub repository, providing version history and traceability.
+Generate SQL that analyzes the fct_users_created table
+and calculates the number of users created each day.
 
----
+- Generate a dbt Model
 
-### Alternative Example Prompts
+Generate a production-ready dbt model for the fct_users_created table.
+Use the available metadata and follow dbt best practices.
 
-#### Generate SQL
+- Generate YAML Configuration
 
-```text
-Generate SQL that counts new users created each day.
-```
+Generate a YAML configuration for deploying a pipeline
+associated with the fct_users_created dataset.
 
----
+- Generate Terraform
 
-#### Generate dbt Model
+Generate Terraform infrastructure required to support
+the data pipeline for the fct_users_created dataset.
+Use production-oriented configuration and best practices.
 
-```text
-Generate a dbt model for the
-fct_users_created table using best practices.
-```
+- Generate Documentation
 
----
+Generate comprehensive documentation for the
+fct_users_created data pipeline, including its purpose,
+workflow, generated artifacts, validation process,
+and deployment considerations.
 
-#### Generate Airflow DAG
+- Generate and Commit to GitHub
 
-```text
-Generate a production-ready Airflow DAG
-scheduled to run every day at midnight.
-```
+Generate a production-ready Airflow DAG for the
+fct_users_created table, validate the generated artifact,
+commit the result to GitHub, and prepare the artifact for download.
 
----
+- Generate a Complete Pipeline
 
-#### Generate YAML Configuration
+Generate a complete data pipeline for the fct_users_created dataset. Use the available metadata to determine the required artifacts,
+generate the appropriate pipeline components, validate them,
+commit the valid artifacts to GitHub, and prepare the results for download.
 
-```text
-Generate a YAML configuration
-for the pipeline deployment.
-```
 
----
+### Generated Artifact Types
 
-#### Generate Project Documentation
+Depending on the user's request, the agent can execute different generation skills.
 
-```text
-Generate comprehensive project documentation
-for this data pipeline.
-```
-
----
-
-### Expected Outputs
-
-Depending on the selected artifact type, the application may produce:
-
-| Artifact | Description |
-|----------|-------------|
-| Airflow DAG | Production-ready workflow orchestration |
-| SQL | Analytics or transformation queries |
-| dbt Model | dbt-compatible SQL model |
-| YAML | Configuration files |
-| README | Automatically generated documentation |
-| IAM Policy | Least-privilege AWS security policy |
-| Validation Report | Validation status and details |
-| ZIP Package | Bundled artifacts for download |
-| GitHub Commit | Commit SHA for uploaded artifacts |
-
-
-
-## 📸 Screenshots
-
-### 1. Dashboard
-
-
-
-![Dashboard](docs/images/dashboard.png)
-
-
-
-The main interface of the AI Data Pipeline Generator showing backend connectivity, and metadata exploration.
-
-
-
----
-
-
-
-### 2. Metadata Explorer
-
-
-
-![Metadata Explorer](docs/images/metadata.png)
-
-
-
-Browse available DataHub metadata and select a dataset before generating pipeline artifacts.
-
-
-
----
-
-
-
-### 3. AI Pipeline Generation
-
-
-
-#### Generation Request
-
-
-
-![Generation Request](docs/images/generation1.png)
-
-
-
-Users specify the desired artifact type and provide natural language instructions for the AI generation engine.
-
-
-
-#### Generated Pipeline
-
-
-
-![Generated Pipeline](docs/images/generation2.png)
-
-
-
-The platform produces production-ready Airflow DAGs, dbt models, SQL scripts, IAM policies, YAML configurations, and supporting artifacts.
-
-
-
----
-
-
-
-### 4. Generation Results
-
-
-
-#### Validation Summary
-
-
-
-![Validation Results](docs/images/results2.png)
-
-
-
-Generated artifacts are validated to ensure correctness and production readiness.
-
-
-
-#### Generated Artifacts
-
-
-![Generated Artifacts](docs/images/results1.png)
-
-
-
-Users can inspect every generated file before deployment.
-
-
-
----
-
-
-### 5. Download Generated Package
-
-
-
-![Download](docs/images/download.png)
-
-
-
-Download the complete generated pipeline package as a ZIP archive for immediate use.
-
-
----
-
-
-### 6. GitHub Integration
-
-
-
-#### Automatic Commit
-
-
-
-![GitHub Commit](docs/images/github_commit1.png)
-
-
-![GitHub Commit](docs/images/github_commit2.png)
-
-Generated artifacts are automatically committed to the configured GitHub repository using the GitHub Contents API.
-
-
-
-#### Repository History
-
-
-
-![GitHub History](docs/images/github_commit2.png)
-
-
-
-Each generation creates a traceable commit, providing version control and collaboration capabilities.
-
-
----
-
-
-### 7. Interactive API Documentation
-
-
-
-![API Documentation](docs/images/api_docs.png)
-
-
-
-FastAPI automatically generates interactive Swagger UI documentation for exploring and testing every API endpoint.
+| Capability           | Purpose                                  |
+| -------------------- | ---------------------------------------- |
+| Airflow Generation   | Generate Apache Airflow DAGs             |
+| SQL Generation       | Generate SQL queries and transformations |
+| dbt Generation       | Generate dbt models                      |
+| YAML Generation      | Generate pipeline configuration          |
+| README Generation    | Generate project documentation           |
+| Terraform Generation | Generate infrastructure-as-code          |
+| IAM Generation       | Generate security policies               |
+| Validation           | Validate generated artifacts             |
+| Git Commit           | Commit validated artifacts to GitHub     |
+| Artifact Download    | Prepare generated artifacts for download |
 
 
 ## 📁 Project Structure
