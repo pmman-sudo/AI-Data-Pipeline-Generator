@@ -1,56 +1,46 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.dummy import DummyOperator
-from airflow.providers.amazon.aws.operators.redshift import RedshiftRunQueryOperator
+from airflow.operators.python import PythonOperator
 
 default_args = {
-    'owner': 'Demo',
-    'depends_on_past': False,
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5),
+    "owner": "Paul",
+    "depends_on_past": False,
+    "retries": 1,
+    "retry_delay": timedelta(minutes=5),
 }
 
-dag = DAG(
-    'fct_users_created_dag',
+def load_data():
+    pass
+
+def transform_data():
+    pass
+
+def validate_data():
+    pass
+
+with DAG(
+    "fct_users_created_dag",
     default_args=default_args,
-    description='DAG for fct_users_created table',
-    schedule_interval='@daily',
-    start_date=datetime(2023, 12, 1),
-    tags=['Demo'],
-)
+    description="DAG for fct_users_created",
+    schedule=timedelta(days=1),
+    start_date=datetime(2023, 1, 1),
+    catchup=False,
+    tags=[],
+) as dag:
 
-start_task = DummyOperator(
-    task_id='start_task',
-    dag=dag,
-)
+    load_task = PythonOperator(
+        task_id="load_data",
+        python_callable=load_data,
+    )
 
-end_task = DummyOperator(
-    task_id='end_task',
-    dag=dag,
-)
+    transform_task = PythonOperator(
+        task_id="transform_data",
+        python_callable=transform_data,
+    )
 
-create_table_task = RedshiftRunQueryOperator(
-    task_id='create_table',
-    query="""
-        CREATE TABLE IF NOT EXISTS fct_users_created (
-            user_id BIGINT,
-            created_at TIMESTAMP,
-            email VARCHAR(255)
-        );
-    """,
-    dag=dag,
-)
+    validate_task = PythonOperator(
+        task_id="validate_data",
+        python_callable=validate_data,
+    )
 
-insert_data_task = RedshiftRunQueryOperator(
-    task_id='insert_data',
-    query="""
-        INSERT INTO fct_users_created (user_id, created_at, email)
-        SELECT user_id, created_at, email
-        FROM src_users;
-    """,
-    dag=dag,
-)
-
-start_task >> create_table_task >> insert_data_task >> end_task
+    load_task >> transform_task >> validate_task
