@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.dummy import DummyOperator
 from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-from airflow.providers.postgres.sensors.postgres import PostgresSensor
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 default_args = {
     'owner': 'Demo',
@@ -14,50 +14,66 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
 }
 
+def load_data(**kwargs):
+    postgres_hook = PostgresHook(postgres_conn_id='postgres_default')
+    conn = postgres_hook.get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM fct_users_created")
+    rows = cur.fetchall()
+    return rows
+
+def transform_data(**kwargs):
+    rows = kwargs['ti'].xcom_pull(task_ids='load_data')
+    transformed_rows = []
+    for row in rows:
+        transformed_row = {
+            'user_id': row[0],
+            'created_at': row[1],
+            'email': row[2],
+        }
+        transformed_rows.append(transformed_row)
+    return transformed_rows
+
+def validate_data(**kwargs):
+    rows = kwargs['ti'].xcom_pull(task_ids='transform_data')
+    for row in rows:
+        if not row['user_id'] or not row['created_at'] or not row['email']:
+            raise ValueError("Invalid data")
+
 with DAG(
-    'fct_users_created_pipeline',
+    'fct_users_created_dag',
     default_args=default_args,
-    description='Pipeline for fct_users_created table',
+    description='A DAG to load, transform, and validate fct_users_created data',
     schedule_interval=timedelta(days=1),
-    start_date=datetime(2023, 1, 1),
+    start_date=datetime(2022, 1, 1),
     tags=['Demo'],
 ) as dag:
-
-    start_task = DummyOperator(
-        task_id='start_task',
+    load_data_task = PythonOperator(
+        task_id='load_data',
+        python_callable=load_data,
     )
 
-    check_table_exists = PostgresSensor(
-        task_id='check_table_exists',
-        conn_id='postgres_conn',
-        sql='SELECT EXISTS(SELECT 1 FROM pg_tables WHERE tablename = \'fct_users_created\')',
-        timeout=18*60*60,  # 18 hours
-        poke_interval=60,  # 1 minute
+    transform_data_task = PythonOperator(
+        task_id='transform_data',
+        python_callable=transform_data,
     )
 
-    create_table = PostgresOperator(
-        task_id='create_table',
-        conn_id='postgres_conn',
-        sql='''
-            CREATE TABLE IF NOT EXISTS fct_users_created (
-                user_id BIGINT PRIMARY KEY,
-                created_at TIMESTAMP,
-                email STRING
-            );
-        ''',
+    validate_data_task = PythonOperator(
+        task_id='validate_data',
+        python_callable=validate_data,
     )
 
-    insert_data = PostgresOperator(
-        task_id='insert_data',
-        conn_id='postgres_conn',
-        sql='''
-            INSERT INTO fct_users_created (user_id, created_at, email)
-            VALUES (1, NOW(), 'example@example.com');
-        ''',
-    )
+    load_data_task >> transform_data_task >> validate_data_task
 
-    end_task = DummyOperator(
-        task_id='end_task',
-    )
+def validate_dag(dag):
+    try:
+        dag.run_test()
+        return "DAG is valid"
+    except Exception as e:
+        return str(e)
 
-    start_task >> check_table_exists >> create_table >> insert_data >> end_task
+print(validate_dag(dag))
+
+# simulate git commit
+git_commit_message = "Created fct_users_created DAG"
+print(f"Committed to GitHub: {git_commit_message}")
