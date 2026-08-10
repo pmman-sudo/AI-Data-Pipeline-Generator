@@ -118,6 +118,7 @@ with DAG(
 
 def test_generate_airflow_without_commit(mocker):
 
+    mock_airflow_llm(mocker)
     mock_metadata(mocker)
 
     mock_planner(
