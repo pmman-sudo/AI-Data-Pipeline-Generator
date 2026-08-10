@@ -222,3 +222,4 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 >>>>>>> 32ad9864ccc5d40c3b2629b952f45cbb44cbf805
+venv311/
