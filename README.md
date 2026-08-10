@@ -1,69 +1,111 @@
 # 🚀 AI Data Pipeline Generator
 
-> An AI-powered Data Engineering Agent that transforms natural language into production-ready data pipelines, SQL transformations, dbt models, Airflow DAGs, and infrastructure configurations using enterprise context and metadata intelligence.
+> An Autonomous AI Data Engineering Agent that transforms natural-language requests into validated data engineering artifacts.
+
+The AI Data Pipeline Generator is an AI-powered data engineering platform that interprets natural-language objectives, determines the skills required to complete the task, retrieves relevant dataset metadata, generates engineering artifacts, validates the results, and optionally commits them to GitHub.
 
 ---
 
 ## 📦 Generated Artifacts
 
-The AI Data Pipeline Generator automatically produces the following production-ready engineering assets from a single natural language prompt:
+The agent can generate and validate multiple types of data engineering artifacts depending on the user's request and the execution plan.
 
-| Artifact | Example |
-|----------|---------|
-| Apache Airflow DAG | `examples/airflow/production_airflow_pipeline.py.png` |
-| YAML Pipeline Configuration | `examples/yaml/pipeline_config.yaml.png` |
-| dbt Fact Model | `examples/dbt/fct_users_created_dbtfact_model.png` |
-| SQL Transformation | `examples/sql/sales_transformation.sql.png` |
-| Project Documentation (README) | `examples/README/generated_project_readme.png` |.
+| Artifact | Description | Output |
+|---|---|---|
+| 🌬️ Apache Airflow DAG | Workflow orchestration code | `generated/airflow/` |
+| 🗄️ SQL | SQL transformations and queries | `generated/sql/` |
+| 🧩 dbt | dbt models and related artifacts | `generated/dbt/` |
+| 📝 YAML | Pipeline and configuration files | `generated/yaml/` |
+| 📖 README | Generated project documentation | `generated/readme/` |
+| 🏗️ Terraform | Infrastructure-as-Code configurations | `generated/terraform/` |
+| 🔐 IAM Policy | Security policies associated with generated artifacts | `generated/iam_policies/` |
+
+Generated artifacts are validated before the agent reports a successful execution.
 
 ---
 
-## Table of Contents
+## 📚 Table of Contents
 
-- Overview
-- Problem Statement
-- Features
-- Architecture
-- Prompt Generation Pipeline
-- System Workflow
-- Tech Stack
-- Design Decisions
-- Installation
-- Configuration
-- Running the Application
-- API Reference
-- Example Usage
-- Screenshots
-- Project Structure
-- Security
-- Validation
-- Deployment
-- CI/CD
-- Roadmap
-- License
+- [Overview](#overview)
+- [Problem Statement](#problem-statement)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Agent Execution Pipeline](#agent-execution-pipeline)
+- [System Workflow](#system-workflow)
+- [Tech Stack](#tech-stack)
+- [Design Decisions](#design-decisions)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running the Application](#running-the-application)
+- [API Reference](#api-reference)
+- [Example Usage](#example-usage)
+- [Screenshots](#screenshots)
+- [Project Structure](#project-structure)
+- [Security](#security)
+- [Validation](#validation)
+- [Deployment](#deployment)
+- [Continuous Integration & Continuous Deployment (CI/CD)](#continuous-integration--continuous-deployment-cicd)
+- [Roadmap](#roadmap)
+- [License](#license)
 
 ---
 
 ## Overview
 
-**AI Data Pipeline Generator** is a metadata-aware AI platform powered by an autonomous Data Engineering Agent that transforms natural language requests into secure, validated, production-ready data engineering artifacts. By combining enterprise metadata from DataHub with Large Language Models (LLMs), the platform retrieves and reasons over dataset metadata—including schemas, lineage, ownership, and governance context—before generating production-ready pipeline components that accelerate modern data engineering workflows.
+**AI Data Pipeline Generator** is an autonomous AI Data Engineering Agent that transforms natural-language engineering requests into validated data engineering artifacts.
 
-Instead of manually writing Airflow DAGs, SQL transformations, dbt models, YAML configurations, IAM policies, and deployment documentation, users simply describe the pipeline they want to build. The agent orchestrates the complete generation workflow by retrieving metadata, enriching AI prompts with organizational context, generating artifacts, validating the output, packaging the results, and optionally committing them directly to GitHub.
+Instead of manually selecting tools and executing individual generation steps, users describe their objective and allow the agent to determine the workflow required to complete it.
 
-Designed for data engineers, analytics engineers, DevOps engineers, and platform teams, the project demonstrates how metadata-aware AI agents can reduce repetitive engineering work while improving consistency, governance, security, and production readiness.
+The agent follows a structured execution model:
 
+```text
+Natural-Language Request
+        │
+        ▼
+┌─────────────────────┐
+│   Planning Agent    │
+│                     │
+│ Determine required  │
+│      skills         │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│   Skill Execution   │
+│                     │
+│ Metadata            │
+│ Generation          │
+│ Validation          │
+│ Git                 │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│ Artifact Delivery   │
+│                     │
+│ Generated artifact  │
+│ Validation results  │
+│ Optional Git commit │
+└─────────────────────┘
+```
+---
+
+```markdown
 ### Key Capabilities
 
-- Generate complete data engineering pipelines from natural language.
-- Retrieve dataset metadata directly from DataHub.
-- Produce production-ready Airflow DAGs.
-- Generate SQL transformations and dbt models.
-- Create YAML configuration files and project documentation.
-- Validate generated artifacts before delivery.
-- Generate least-privilege IAM security policies.
-- Package artifacts into downloadable ZIP archives.
-- Commit generated artifacts directly to GitHub using the GitHub Contents API.
-- Deploy as a cloud-native application using FastAPI, Streamlit, and Render.
+- 🤖 Interpret natural-language data engineering requests.
+- 🧠 Automatically construct an execution plan.
+- 📊 Retrieve dataset metadata from DataHub.
+- 🗄️ Generate SQL artifacts.
+- 🌬️ Generate Apache Airflow DAGs.
+- 🧩 Generate dbt artifacts.
+- 📝 Generate YAML configuration.
+- 📖 Generate README/project documentation.
+- 🏗️ Generate Terraform infrastructure.
+- 🔐 Generate IAM security policies.
+- 🛡️ Validate generated artifacts before successful completion.
+- 🔗 Optionally commit generated artifacts to Git.
+- 📦 Provide generated artifacts for download.
 
 
 ## Problem Statement
@@ -76,328 +118,204 @@ Recent advances in Large Language Models (LLMs) have demonstrated their ability 
 
 The AI Data Pipeline Generator addresses these challenges by combining enterprise metadata with AI-assisted code generation. Instead of generating generic templates, the platform enriches AI prompts using metadata retrieved from DataHub, validates the generated artifacts, produces supporting security policies, packages the results for delivery, and optionally commits the generated assets directly to GitHub.
 
-By reducing repetitive engineering work while leveraging trusted metadata, the platform enables engineers to prototype, validate, and deliver production-ready data pipeline components significantly faster.
+By reducing repetitive engineering work while leveraging trusted metadata, the platform enables engineers to prototype, validate, and deliver production-oriented data pipeline components significantly faster.
 
 
 ## Features
 
 The AI Data Pipeline Generator combines enterprise metadata, artificial intelligence, and cloud-native tooling to automate the generation of production-ready data engineering artifacts.
+ 
+### 🧠 Autonomous Skill Orchestration
 
-### 🤖 AI-Powered Code Generation
+The system uses an autonomous planning layer to determine which engineering skills are required for a user's request.
 
-- Generate production-ready Airflow DAGs from natural language.
-- Generate SQL transformations using dataset metadata.
-- Generate dbt models following analytics engineering best practices.
-- Generate YAML configuration files for pipeline configuration.
-- Generate project documentation and README files automatically.
-- Generate complete end-to-end pipeline packages with a single request.
+Rather than requiring the user to manually select a sequence of operations, the planner produces an execution plan.
 
----
+For example:
 
-### 📊 Metadata Integration
+```text
+User:
+"Generate an Airflow DAG for the fct_users_created table."
 
-- Retrieve dataset metadata directly from DataHub.
-- Incorporate schema, column definitions, ownership, tags, and lineage into AI prompts.
-- Produce metadata-aware artifacts instead of generic code templates.
+             │
+             ▼
+
+Execution Plan:
+
+1. Metadata Lookup
+2. Generate Airflow DAG
+3. Validate Artifact
 
 
-### 🧠 AI Skill Orchestration
+User:
+"Generate Terraform infrastructure for fct_users_created
+and commit it to Git."
 
-The AI Data Pipeline Generator uses a Skill Orchestrator to dynamically enrich AI prompts based on the artifact being generated.
+             │
+             ▼
 
-Instead of sending the same metadata for every request, the backend selects specialized metadata skills that provide only the most relevant context.
+Execution Plan:
 
-Supported skills include:
-
-- Search
-- Dataset Lineage
-- Data Quality
-- Metadata Enrichment
-
-Each artifact invokes a different workflow:
-
-| Artifact | Skills |
-|-----------|--------|
-| SQL | Search + Lineage |
-| Airflow DAG | Search + Lineage |
-| dbt Model | Search + Lineage + Quality |
-| YAML Config | Search + Quality |
-| README | Search + Metadata Enrichment |
-
-This improves generation quality while reducing unnecessary prompt context.
-
----
-
-### 🛡 Security & Governance
-
-- Generate least-privilege AWS IAM policies.
-- Validate generated artifacts before delivery.
-- Encourage production-ready engineering practices.
-- Support metadata-driven governance.
-
----
-
-### ⚙ Pipeline Automation
-
-- Package generated artifacts into downloadable ZIP archives.
-- Support generation of individual artifacts or complete pipelines.
-- Generate reusable project assets with consistent structure.
-
----
-
-### ☁ Cloud-Native Deployment
-
-- FastAPI backend for REST API services.
-- Streamlit frontend for an interactive user experience.
-- Deployed using Render.
-- CI/CD powered by GitHub Actions.
-
----
-
-### 🔗 GitHub Integration
-
-- Upload generated artifacts directly to GitHub.
-- Automatically create commits through the GitHub Contents API.
-- Return commit hashes for traceability.
-
----
-
-### ✅ Developer Experience
-
-- Simple natural language interface.
-- Interactive metadata explorer.
-- Download generated artifacts directly from the browser.
-- Modular project structure for easy extension.
-- Designed as a portfolio-ready and production-inspired application.
-
+1. Metadata Lookup
+2. Generate Terraform
+3. Validate Artifact
+4. Git Commit
+```
 
 ## Architecture
 
-The AI Data Pipeline Generator follows a modular, service-oriented architecture that separates user interaction, pipeline generation, metadata retrieval, validation, and artifact management into independent components.
-
-A user submits a natural language request through the Streamlit frontend. The FastAPI backend orchestrates the workflow by retrieving metadata from DataHub, constructing an enriched prompt, invoking the Large Language Model (LLM), validating the generated artifacts, generating supporting security policies, packaging the outputs, optionally committing them to GitHub, and returning the results to the user.
+The AI Data Pipeline Generator uses a modular agent architecture in which a planning layer determines the skills required to execute a natural-language engineering request.
 
 ```mermaid
 flowchart LR
 
-A["👤 User"] --> B["🖥 Streamlit Frontend"]
+A["👤 User"] --> B["🖥 Streamlit UI"]
 
 B --> C["⚡ FastAPI Backend"]
 
-C --> D["📊 DataHub Metadata"]
-C --> E["🧠 Groq LLM"]
-C --> F["🧩 Skill Orchestrator"]
-F --> G["🔍 Search Skill"]
-F --> H["🌐 Lineage Skill"]
-F --> I["📈 Quality Skill"]
-F --> J["📝 Enrichment Skill"]
+C --> D["🧠 Planning Agent"]
 
-C --> K["✅ Validation Engine"]
-C --> L["🔒 IAM Policy Generator"]
-C --> M["📦 Artifact Packaging"]
-C --> N["🐙 GitHub API"]
-C --> O["✍️ DataHub Write-back"]
+D --> E["📊 Metadata Lookup"]
+D --> F["🗄️ SQL Generation"]
+D --> G["🌬️ Airflow Generation"]
+D --> H["🧩 dbt Generation"]
+D --> I["📝 YAML Generation"]
+D --> J["📖 README Generation"]
+D --> K["🏗️ Terraform Generation"]
+D --> L["🔐 IAM Generation"]
+D --> M["🛡️ Validation"]
+D --> N["🔗 Git Commit"]
 
-D --> C
-E --> C
-G --> C
-H --> C
-I --> C
-J --> C
-K --> C
-L --> C
-M --> C
-N --> C
-O --> C
+E --> O["📊 DataHub"]
+E --> P["📦 Execution Context"]
 
-C --> P["📥 Downloadable Artifacts"]
-C --> Q["🔗 Git Commit SHA"]
-C --> R["📊 Validation Results"]
+F --> P
+G --> P
+H --> P
+I --> P
+J --> P
+K --> P
+L --> P
 
-P --> B
-Q --> B
+P --> Q["🧠 Groq LLM"]
+
+Q --> M
+
+M --> R["📦 Generated Artifact"]
+M --> S["📋 Validation Result"]
+
+N --> T["🐙 Git"]
+
 R --> B
-
-B --> A
+S --> B
+T --> B
 ```
 
 ### Architecture Components
 
 | Component | Responsibility |
-|------------|----------------|
-| **Streamlit Frontend** | Provides an interactive interface for metadata exploration and AI pipeline generation. |
-| **FastAPI Backend** | Coordinates the complete generation workflow and exposes REST API endpoints. |
-| **DataHub** | Supplies dataset metadata including schema, ownership, tags, and lineage. |
-| **Groq LLM** | Generates production-ready pipeline artifacts using metadata-aware prompts. |
-| **Validation Engine** | Verifies generated outputs before they are returned to the user. |
-| **IAM Policy Generator** | Produces least-privilege AWS IAM policies alongside generated pipelines. |
-| **Artifact Generator** | Packages generated files into downloadable ZIP archives or individual artifacts. |
-| **GitHub API** | Uploads generated artifacts to the repository and returns commit hashes for traceability. |
+|---|---|
+| **Streamlit Frontend** | Provides the interactive interface for metadata exploration and agent execution. |
+| **FastAPI Backend** | Exposes the API and coordinates the agent execution workflow. |
+| **Planning Agent** | Interprets the user's request and determines the required execution steps. |
+| **Skill System** | Contains modular engineering capabilities such as metadata lookup, generation, validation, and Git operations. |
+| **DataHub** | Provides dataset metadata used as context during generation. |
+| **Groq LLM** | Provides LLM inference for planning and artifact generation. |
+| **Validation Engine** | Checks generated artifacts against artifact-specific validation rules. |
+| **IAM Generator** | Generates security policies associated with generated artifacts. |
+| **Git Integration** | Optionally commits generated artifacts to Git. |
+| **Generated Artifact Store** | Stores generated artifacts under the `generated/` directory. |
 
 
-## Prompt Generation Pipeline
+## 🧠 Agent Execution Pipeline
 
 Every generation request follows the same high-level process:
 
 ```text
-Natural Language Request
+Natural-Language Request
         │
         ▼
-Infer Artifact Type
-        │
-        ▼
-Retrieve Metadata
-        │
-        ▼
-Run Skill Orchestrator
-        │
-        ▼
-Construct Metadata-aware Prompt
-        │
-        ▼
-Groq LLM
-        │
-        ▼
-Validation
-        │
-        ▼
-GitHub Commit
-        │
-        ▼
-Return Generated Artifact
+┌────────────────────┐
+│  Planning Agent    │
+└─────────┬──────────┘
+          │
+          ▼
+   Execution Plan
+          │
+          ▼
+┌────────────────────┐
+│   Skill Executor   │
+└─────────┬──────────┘
+          │
+     ┌────┴─────┐
+     ▼          ▼
+ Metadata    Generation
+ Lookup        Skill
+     │          │
+     └────┬─────┘
+          ▼
+      Validation
+          │
+          ▼
+    Delivery / Git
 ```
 
-This architecture ensures that every generated artifact is enriched with the most relevant metadata before being sent to the language model.
+The key architectural principle is that the LLM does not directly control the entire application workflow. The planning layer produces a structured execution plan, while the application executes the corresponding skills.
+
+This separation provides clearer control over:
+
+- Which operations are executed
+- The order in which they execute
+- Validation requirements
+- Git operations
+- Error handling
+- Future skill expansion
 
 
 ## System Workflow
 
-The AI Data Pipeline Generator follows a metadata-driven workflow that combines enterprise metadata, artificial intelligence, validation, security analysis, and artifact packaging into a single automated pipeline.
-
-Each generation request passes through multiple stages before the final artifacts are delivered to the user.
+The workflow is dynamically determined by the planning agent.
 
 ```mermaid
 sequenceDiagram
 
 actor User
-
-participant UI as Streamlit Frontend
-participant API as FastAPI Backend
+participant UI as Streamlit
+participant API as FastAPI
+participant Planner as Planning Agent
+participant Skills as Skill Executor
 participant DH as DataHub
-participant AI as Groq LLM
-participant VAL as Validation Engine
-participant SEC as IAM Policy Generator
-participant ZIP as Artifact Generator
-participant GH as GitHub API
+participant LLM as Groq LLM
+participant VAL as Validator
+participant Git as Git
 
-User->>UI: Enter prompt & artifact type
+User->>UI: Submit natural-language request
 UI->>API: POST /generate
+API->>Planner: Generate execution plan
+Planner-->>API: Structured skill plan
 
-API->>DH: Retrieve table metadata
-DH-->>API: Schema, lineage, owners, tags
+API->>Skills: Execute planned skills
 
-API->>AI: Build metadata-aware prompt
-AI-->>API: Generated artifacts
+Skills->>DH: Retrieve metadata
+DH-->>Skills: Table metadata
 
-API->>VAL: Validate generated code
-VAL-->>API: Validation results
+Skills->>LLM: Generate artifact using context
+LLM-->>Skills: Generated artifact
 
-API->>SEC: Generate IAM policy
-SEC-->>API: Security policy
+Skills->>VAL: Validate artifact
+VAL-->>Skills: Validation result
 
-API->>ZIP: Package generated artifacts
-ZIP-->>API: ZIP / files
+alt Git commit requested
+    Skills->>Git: Commit generated artifact
+    Git-->>Skills: Commit identifier
+end
 
-API->>GH: Commit generated artifacts (optional)
-GH-->>API: Commit SHA
-
-API-->>UI: Return artifacts + validation + commit
-
-UI-->>User: Display results & download links
+Skills-->>API: Execution results
+API-->>UI: Artifact + validation + commit
+UI-->>User: Display results
 ```
 
 ---
-
-### Workflow Stages
-
-#### 1. User Request
-
-The workflow begins when a user submits a natural language request describing the desired pipeline or artifact.
-
-Examples include:
-
-- Generate an Airflow DAG for the `fct_users_created` table.
-- Generate SQL to count daily active users.
-- Generate a complete production pipeline.
-
----
-
-#### 2. Metadata Retrieval
-
-The backend queries DataHub to retrieve metadata for the requested dataset, including:
-
-- Column names
-- Data types
-- Ownership
-- Tags
-- Dataset lineage
-
-This metadata is used to enrich the AI prompt, ensuring generated artifacts accurately reflect the underlying data model.
-
----
-
-#### 3. AI Generation
-
-The enriched prompt is sent to the Large Language Model (LLM), which generates one or more production-ready artifacts, such as:
-
-- Airflow DAGs
-- SQL scripts
-- dbt models
-- YAML configuration files
-- Project documentation
-
----
-
-#### 4. Validation
-
-Generated artifacts are automatically validated to ensure they satisfy expected structural and formatting requirements before being returned to the user.
-
----
-
-#### 5. Security Policy Generation
-
-The application generates a least-privilege AWS IAM policy tailored to the generated pipeline, promoting secure deployment practices.
-
----
-
-#### 6. Artifact Packaging
-
-Depending on the selected generation mode, the system either:
-
-- returns a single generated artifact, or
-- packages multiple artifacts into a downloadable ZIP archive.
-
----
-
-#### 7. GitHub Integration
-
-If GitHub integration is enabled, generated artifacts are uploaded to the configured repository using the GitHub Contents API.
-
-The resulting commit SHA is returned to the frontend to provide traceability for generated outputs.
-
----
-
-#### 8. Delivery
-
-Finally, the frontend presents:
-
-- Generated artifacts
-- Validation results
-- Security policy
-- Download links
-- GitHub commit hash (when available)
-
-allowing users to immediately inspect, download, or integrate the generated assets into their workflow.
 
 
 ## Tech Stack
@@ -406,7 +324,7 @@ The AI Data Pipeline Generator is built using a modern, cloud-native technology 
 
 | Category | Technology | Purpose |
 |-----------|------------|---------|
-| **Programming Language** | Python 3.11 | Primary language for backend services and AI orchestration. |
+| **Programming Language** | Python | Primary language for backend services and AI orchestration. |
 | **Backend Framework** | FastAPI | High-performance REST API framework used to orchestrate pipeline generation. |
 | **Frontend** | Streamlit | Interactive web interface for metadata exploration and pipeline generation. |
 | **AI / LLM** | Groq API | Generates production-ready data engineering artifacts using metadata-aware prompts. |
@@ -483,13 +401,19 @@ This metadata is incorporated into prompt construction, enabling the AI to gener
 
 ---
 
-### Validation Before Delivery
+### Validation Before Successful Completion
 
-AI-generated code is not automatically assumed to be production-ready.
+Generated artifacts are not automatically considered successful simply because the LLM returned code.
 
-Every generation request passes through a validation stage before results are returned to the user.
+The agent can include an artifact validation step in the execution plan. The validator applies artifact-specific checks before the workflow is considered successful.
 
-This design helps improve consistency while encouraging responsible AI-assisted software generation.
+For example, Terraform validation checks for meaningful Terraform configuration blocks such as:
+
+- `resource`
+- `module`
+- `data`
+
+This provides a deterministic validation layer between AI generation and artifact delivery.
 
 ---
 
@@ -636,12 +560,16 @@ Create a file named **`.env`** in the project root.
 
 ```text
 AI-Data-Pipeline-Generator/
-│
 ├── app/
 ├── generated/
 ├── tests/
+├── docs/
+├── examples/
+├── scripts/
 ├── streamlit_app.py
 ├── requirements.txt
+├── pytest.ini
+├── .gitignore
 └── .env
 ```
 
@@ -1668,20 +1596,18 @@ The CI pipeline ensures that new contributions maintain the project's reliabilit
 Every push and pull request automatically triggers the CI pipeline.
 
 ```text
-Developer Push
-        │
-        ▼
-GitHub Actions
-        │
-        ├────────► Install Dependencies
-        │
-        ├────────► Run Unit Tests
-        │
-        ├────────► Validate Generated Artifacts
-        │
-        ├────────► Execute Security Checks
-        │
-        └────────► Report Build Status
+Developer Push / Pull Request
+            │
+            ▼
+     GitHub Actions
+            │
+            ├──► Install Dependencies
+            │
+            ├──► Run Automated Tests
+            │
+            ├──► Run Security Checks
+            │
+            └──► Report Workflow Status
 ```
 
 ---
@@ -1763,21 +1689,22 @@ The AI Data Pipeline Generator is under active development. The roadmap below ou
 ---
 
 ### ✅ Current Features
-
-- AI-powered pipeline generation using natural language
-- DataHub metadata integration
-- Airflow DAG generation
-- dbt model generation
-- SQL script generation
-- YAML configuration generation
-- AWS IAM policy generation
-- Artifact validation
-- GitHub Contents API integration
-- Automatic ZIP packaging
-- Streamlit frontend
-- FastAPI REST API
-- Interactive Swagger documentation
-- GitHub Actions CI pipeline
+- AI-powered pipeline generation using natural language.
+- Metadata-aware generation using DataHub.
+- Airflow DAG generation.
+- dbt model generation.
+- SQL generation.
+- YAML configuration generation.
+- README generation.
+- Terraform generation.
+- AWS IAM policy generation.
+- Artifact validation.
+- GitHub integration.
+- Automatic ZIP packaging.
+- Streamlit frontend.
+- FastAPI REST API.
+- Interactive Swagger API documentation.
+- GitHub Actions CI workflow.
 
 ---
 
