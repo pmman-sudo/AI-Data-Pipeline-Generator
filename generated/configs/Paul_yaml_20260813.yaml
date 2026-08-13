@@ -1,0 +1,32 @@
+pipeline_name: paul_pipeline
+pipeline_type: batch
+table_name: Paul
+table_metadata:
+  columns:
+    - name: user_id
+      type: BIGINT
+      primary_key: true
+    - name: created_at
+      type: TIMESTAMP
+    - name: email
+      type: STRING
+  owners:
+    - Demo
+  tags:
+    - Demo
+  upstream_lineage: []
+config:
+  batch_size: 1000
+  max_retries: 3
+  retry_delay: 30
+  storage:
+    type: cloud_storage
+    location: gs://paul-bucket
+  notification:
+    type: email
+    recipients:
+      - demo@example.com
+  logging:
+    level: INFO
+    format: JSON
+    location: gs://paul-logs
