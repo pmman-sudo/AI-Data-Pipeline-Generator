@@ -1,40 +1,34 @@
-pipeline_name: paul_pipeline
-table_metadata:
-  name: Paul
-  columns:
-    - name: user_id
-      type: BIGINT
-    - name: created_at
-      type: TIMESTAMP
-    - name: email
-      type: STRING
-  primary_key: user_id
-owners:
-  - Demo
-tags:
-  - Demo
-upstream_lineage: []
-pipeline_config:
-  batch_size: 1000
-  batch_interval: 300
-  storage:
-    type: parquet
-    location: s3://data-warehouse/paul
-  transformation:
-    - type: filter
-      condition: "created_at IS NOT NULL"
-    - type: filter
-      condition: "email IS NOT NULL"
-  loading:
-    type: insert
-    mode: append
-    destination: paul_table
-logging:
-  level: INFO
-  location: s3://data-warehouse/logs/paul_pipeline.log
-monitoring:
-  type: dashboard
-  location: https://grafana.com/paul_pipeline
-schedule:
-  type: cron
-  interval: "0 0 * * *"
+pipeline:
+  name: Paul Pipeline
+  description: Data pipeline for Paul table
+  owners:
+    - Demo
+  tags:
+    - Demo
+  tables:
+    - name: Paul
+      columns:
+        - name: user_id
+          type: BIGINT
+          primary_key: true
+        - name: created_at
+          type: TIMESTAMP
+        - name: email
+          type: STRING
+      upstream_lineage: []
+  tasks:
+    - name: extract
+      type: EXTRACT
+      query: SELECT * FROM Paul
+      destination: Paul_extract
+    - name: transform
+      type: TRANSFORM
+      query: SELECT * FROM Paul_extract
+      destination: Paul_transform
+    - name: load
+      type: LOAD
+      query: SELECT * FROM Paul_transform
+      destination: Paul_load
+  schedule:
+    cron: 0 0 * * *
+    timeout: 3600
